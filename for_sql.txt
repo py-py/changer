@@ -1,0 +1,59 @@
+db.drop_all()
+
+db.create_all()
+Role.insert_roles()
+User.insert_user()
+Cashes.insert_cashes()
+Currency.insert_currency()
+TypeOfOperation.insert_operation()
+
+py = User(username='py', fname='Руслан', sname='Валеев', phone='+380506624980', password='py', role=Role.query.filter_by(default=True).first())
+
+db.session.add(py)
+db.session.commit()
+
+
+#######################################################
+pattern="[0-9]+(\\.[0-9][0-9]?)?"
+###########
+
+Страница Начальника
+1)Вывести состояние касс;
+for(var i=0; i<$("tbody tr").length; i++) {console.log($("tbody tr")[i])}
+
+
+a = $("tbody tr:eq(0)").find('td:eq(1)').text()
+b = $("tbody tr:eq(1)").find('td:eq(1)').text()
+parseFloat(a)+parseFloat(b)
+
+##############
+
+Страница транзакции и босса:
+1) проверка на ввод даты - неактивная кнопка;
+
+Страница операции:
+1) добавить колонку тип операции: покупка или продажа;
+2)проверка на отрицательный баланс;
+
+Страница Инкассации:
+1)Проверка на отрицательный баланс;
+
+
+#####################################
+Страница пользователя
+1)Логика доделать;
+
+Добавление кассы
+1)номер телефона кассы/объекта
+
+
+#####################################
+Примочки:
+
+# Об кнопке ENTER:
+$(document).keypress(function(e) {
+    if(e.which == 13) {
+        alert('You pressed enter!');
+    }
+});
+

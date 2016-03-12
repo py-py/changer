@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+
+{% block title %} Changer-Добавление нового Пользователя {% endblock title%}
+
+{% block content %}
+    <div class="col-sm-6 col-sm-offset-3 loginpage">
+        <p><h2 class="text-center">Добавление нового Пользователя</h2></p>
+        {% for message in get_flashed_messages() %}
+            <div id="alert_message" class="alert alert-warning">
+                <button type="button" class="close" data-dismiss="alert">&times;</button>
+                {{message}}
+            </div>
+        {% endfor %}
+        <form method="post">
+            <div class="input-group">
+                <span class="input-group-addon">Username:</span>
+                <input class="form-control" name="username" placeholder="Username" type="text" required>
+            </div>
+            <p></p>
+            <div class="input-group">
+                <span class="input-group-addon">Password:</span>
+                <input class="form-control" name="password" placeholder="Password" type="text" required>
+            </div>
+            <p></p>
+            <div class="input-group">
+                <span class="input-group-addon">Роль пользователя:</span>
+                <select class="form-control" name="select_role">
+                    {%  for r in roles %}
+                        <option value="{{ r.id }}">
+                            <span>{{ r.description }}</span>
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <p></p>
+            <div class="row text-center" style="margin-top:10px">
+                <button type="submit" class="btn btn-success" disabled>Добавить Пользователя</button>
+                <button type="reset" class="btn btn-warning">Сбросить</button>
+            </div>
+        </form>
+        <div>
+            <p><h2 class="text-center">Список существующих Пользователей</h2></p>
+            <div class="row">
+                <table class="table">
+                    <thead>
+                    <tr>
+                        <th class="text-center">Username</th>
+                        <th class="text-center">Роль</th>
+                        <th class="text-center">Дата регистрации</th>
+                        <th class="text-center">Касса</th>
+                        <th class="text-center">Управление</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for u in users %}
+                        <tr>
+                            <td class="text-center">{{ u.username }}</td>
+                            <td class="text-center">{{ u.role.description }}</td>
+                            <td class="text-center">{{ moment(u.member_since).format('LLL') }}</td>
+                            <td class="text-center">{{ u.cash.branch }}</td>
+                            <td class="text-center">
+                                <button class="btn btn-xs btn-danger" disabled>Change</button>
+                                {% if u.status %}
+                                    <button class="btn btn-xs btn-danger" data-uid="{{ u.id }}" data-user-state="{% if u.status %}1{% else %}0{% endif %}">Off</button>
+                                {% else %}
+                                    <button class="btn btn-xs btn-success" data-uid="{{ u.id }}" data-user-state="{% if u.status %}1{% else %}0{% endif %}">On</button>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+    </div>
+
+{% endblock %}
+
+{% block scripts %}
+    {{ super() }}
+    <script src="{{ url_for('static', filename='moment-with-locales.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='moment_changer.js') }}"></script>
+    {{ moment.lang('ru') }}
+    <script>
+        var ChangeLogin = (function(){
+
+            var pub = {},
+                pr = {};
+
+            pr.url = "{{ url_for('admin.close_user') }}";
+
+            pr.setBtnToState = function (btn, param) {
+                var toClosed = param.state,
+                    text = toClosed ? "Off" : "On",
+                    clsToRemove = toClosed ? "btn-success" : "btn-danger",
+                    clsToAdd = toClosed ? "btn-danger" : "btn-success",
+                    stateValue = toClosed ? 1: 0;
+
+                $(btn).addClass(clsToAdd);
+                $(btn).removeClass(clsToRemove);
+                $(btn).html(text);
+                $(btn).attr('data-user-state', stateValue);
+            };
+
+            pr.changeState = function (params, cbFunc) {
+                $.get({
+                    url: pr.url,
+                    dataType: 'json',
+                    data: params,
+                    success: cbFunc
+                });
+            };
+
+            pub.setHandlers = function(){
+                $('[data-uid]').click(function(evData) {
+                    var btn = this,
+                        attrs = evData.target.attributes;
+
+                    data = {
+                        id: attrs['data-uid'].value,
+                        state: attrs['data-user-state'].value
+                    };
+
+                    cbFunc = function (params) {
+                        pr.setBtnToState(btn, params);
+                    };
+
+                    pr.changeState(data, cbFunc);
+                })
+            };
+
+            return pub;
+        })();
+
+        var CheckLogin = (function(){
+            var pub = {},
+                pr = {};
+
+            pr.url = '{{ url_for('admin.check_login') }}'
+
+            pr.checkLogin = function(param, cbFunc){
+                $.get({
+                    url: pr.url,
+                    dataType: 'json',
+                    data: param,
+                    success: cbFunc
+                });
+            };
+
+            pub.active_button = function() {$('[type="submit"]').prop('disabled', false)};
+            pub.deactive_button = function() {$('[type="submit"]').prop('disabled', true)};
+
+            pub.setHandlers = function(){
+                $('[name="username"]').keyup(function(evData){
+                    var data = {
+                        name: evData.target.value
+                    };
+
+                    cbFunc = function(dataFromServer){
+                        console.log(dataFromServer);
+                        dataFromServer.can ? pub.active_button() : pub.deactive_button();
+                    };
+
+                    pr.checkLogin(data, cbFunc);
+                });
+            };
+
+            return pub;
+        })();
+
+        $(document).ready(
+                CheckLogin.setHandlers(),
+                ChangeLogin.setHandlers()
+        );
+    </script>
+{% endblock %}

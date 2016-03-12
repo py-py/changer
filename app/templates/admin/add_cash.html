@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+
+{% block title %} Changer-Добавление нового Branch-a {% endblock title%}
+
+{% block content %}
+    <div class="col-sm-6 col-sm-offset-3 loginpage">
+        <p><h2 class="text-center">Добавление нового Branch-a</h2></p>
+        {% for message in get_flashed_messages() %}
+            <div id="alert_message" class="alert alert-warning">
+                <button type="button" class="close" data-dismiss="alert">&times;</button>
+                {{message}}
+            </div>
+        {% endfor %}
+        <form method="post">
+
+            <div class="input-group">
+                <span class="input-group-addon">Branch Кассы:</span>
+                <input class="form-control" name="branch" placeholder="CHXX" type="text" required>
+            </div>
+
+            <div class="input-group" style="margin-top: 10px">
+                <span class="input-group-addon">Город Branch-a:</span>
+                <input class="form-control" name="city" placeholder="Введите город" type="text" required>
+            </div>
+
+            <div class="input-group" style="margin-top: 10px">
+                <span class="input-group-addon">Адрес Branch-a:</span>
+                <input class="form-control" name="address" placeholder="Введите адрес" type="text" required>
+            </div>
+
+            <div class="input-group" style="margin-top: 10px">
+                <span class="input-group-addon">Телефон Branch-a:</span>
+                <input class="form-control" name="phone" placeholder="Введите телефон branch-a" type="text" required>
+            </div>
+
+            <div class="row text-center" style="margin-top:10px">
+                <button type="submit" class="btn btn-success" disabled>Добавить Branch</button>
+                <button type="reset" class="btn btn-warning">Сбросить</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="col-sm-8 col-sm-offset-2">
+        <p><h2 class="text-center">Список существующих Branch-ей</h2></p>
+        <div class="row">
+            <table class="table">
+                <thead>
+                <tr>
+                    <th class="text-center">Branch</th>
+                    <th class="text-center">Город</th>
+                    <th class="text-center">Адрес</th>
+                    <th class="text-center">Телефон</th>
+                    <th class="text-center">Начало работы</th>
+                    <th class="text-center">Управление</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for c in cashes %}
+                    <tr>
+                        <td class="text-center">{{ c.branch }}</td>
+                        <td class="text-center">{{ c.city }}</td>
+                        <td class="text-center">{{ c.address }}</td>
+                        <td class="text-center">{{ c.phone }}</td>
+                        <td class="text-center">{{ moment(c.member_since).format('LLL') }}</td>
+                        <td class="text-center">
+                            {% if c.status %}
+                                <button class="btn btn-xs btn-danger" data-cash-id="{{ c.id }}" data-cash-state="{% if c.status %}1{% else %}0{% endif %}">Close</button>
+                            {% else %}
+                                <button class="btn btn-xs btn-success" data-cash-id="{{ c.id }}" data-cash-state="{% if c.status %}1{% else %}0{% endif %}">On</button>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+{% endblock %}
+
+{% block scripts %}
+    {{ super() }}
+    <script src="{{ url_for('static', filename='moment-with-locales.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='moment_changer.js') }}"></script>
+    {{ moment.lang('ru') }}
+
+    <script type="text/javascript">
+        var ChangeUser = (function(){
+
+            var pub = {},
+                pr = {};
+
+            pr.url = "{{ url_for('admin.close_cash') }}";
+
+            pr.setBtnToState = function (btn, param) {
+                var toClosed = param.state,
+                    text = toClosed ? "Close" : "On",
+                    clsToRemove = toClosed ? "btn-success" : "btn-danger",
+                    clsToAdd = toClosed ? "btn-danger" : "btn-success",
+                    stateValue = toClosed ? 1: 0;
+
+                $(btn).addClass(clsToAdd);
+                $(btn).removeClass(clsToRemove);
+                $(btn).html(text);
+                $(btn).attr('data-cash-state', stateValue);
+            };
+
+            pr.changeState = function (params, cbFunc) {
+                $.get({
+                    url: pr.url,
+                    dataType: 'json',
+                    data: params,
+                    success: cbFunc
+                });
+            };
+
+            pub.setHandlers = function(){
+                $('[data-cash-id]').click(function(evData) {
+                    var btn = this,
+                        attrs = evData.target.attributes;
+
+                    data = {
+                        id: attrs['data-cash-id'].value,
+                        state: attrs['data-cash-state'].value
+                    };
+
+                    cbFunc = function (params) {
+                        pr.setBtnToState(btn, params);
+                    };
+
+                    pr.changeState(data, cbFunc);
+                })
+            };
+
+            return pub;
+        })();
+
+
+
+        var CheckBranch = (function(){
+            var pub = {},
+                pr = {};
+
+            pr.url = '{{ url_for('admin.check_cash') }}'
+
+            pr.checkCash = function(param, cbFunc){
+                $.get({
+                    url: pr.url,
+                    dataType: 'json',
+                    data: param,
+                    success: cbFunc
+                });
+            };
+
+            pub.active_button = function() {$('[type="submit"]').prop('disabled', false)};
+            pub.deactive_button = function() {$('[type="submit"]').prop('disabled', true)};
+
+            pub.setHandlers = function(){
+                $('[name="branch"]').keyup(function(evData){
+                    var data = {
+                        name: evData.target.value
+                    };
+
+                    cbFunc = function(dataFromServer){
+                        console.log(dataFromServer);
+                        dataFromServer.can ? pub.active_button() : pub.deactive_button();
+                    };
+
+                    pr.checkCash(data, cbFunc);
+                });
+            };
+
+            return pub;
+        })();
+
+        $(document).ready(
+                CheckBranch.setHandlers(),
+                ChangeUser.setHandlers()
+        );
+
+    </script>
+{% endblock %}

@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %} Changer-Auth {% endblock title%}
+
+{% block content %}
+    <div class="container">
+        <div class="col-md-6 col-md-offset-3 loginpage">
+            <p><h2 class="text-center">Авторизация</h2></p>
+            <form method="post">
+
+                {% for message in get_flashed_messages() %}
+                    <div id="alert_message" class="alert alert-warning">
+                        <button type="button" class="close" data-dismiss="alert">&times;</button>
+                        {{message}}
+                    </div>
+                {% endfor %}
+
+                <div class="input-group">
+                    <span class="input-group-addon">Username:</span>
+                    <input class="form-control" name="username" placeholder="Username" type="text" required>
+                </div>
+                <p></p>
+                <div class="input-group">
+                    <span class="input-group-addon">Password:</span>
+                    <input class="form-control" name="password" placeholder="Password" type="password" required>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-8 col-md-offset-2">
+                        <div class="text-center" style="margin-top:10px">
+                            <strong>
+                                Выбирете Branch и Адрес кассы:
+                            </strong>
+                        </div>
+                        <select class="form-control" name="select_ch">
+                            {%  for c in cashes %}
+                                <option value="{{ c.branch }}">
+                                    Branch:&nbsp;<span>{{ c.branch }}</span>,&nbsp;<span>{{ c.city }}, {{ c.address }}</span>
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row text-center" style="margin-top:10px">
+                    <button type="submit" class="btn btn-success">Авторизация</button>
+                    <button type="reset" class="btn btn-warning">Сбросить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+{% endblock content %}

@@ -1,0 +1,36 @@
+.loginpage {
+    margin-top: 60px;
+}
+
+.fontcurrency {
+    font-size: 5em;
+    top: 5px;
+    right: 5px;
+}
+
+.btn-success:active, .btn-success.active, .open > .dropdown-toggle.btn-success {
+    color: #FFF;
+    background-color: #184218;
+    border-color: #398439;
+}
+
+.input-group-addon:first-child{
+    width: 45%;
+    border-right: 0px none;
+}
+
+.input-group {
+    position: relative;
+    display: table;
+    border-collapse: separate;
+    width: 100%;
+}
+
+.title_name_changer {
+    font-family: sans-serif;
+    font-size: 1.5em;
+}
+
+#modal_sum {
+    font-weight: bolder;
+}

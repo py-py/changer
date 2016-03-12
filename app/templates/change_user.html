@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %} Changer-Редактирование Пользователя {% endblock title%}
+
+{% block styles %}
+{{ super() }}
+    css.input-group-addon
+{% endblock %}
+
+{% block content %}
+    <div class="col-sm-6 col-sm-offset-3 loginpage" xmlns="http://www.w3.org/1999/html">
+        <p><h2 class="text-center">Редактирование пользователя {{ user.fname }}</h2></p>
+
+        {% for message in get_flashed_messages() %}
+            <div id="alert_message" class="alert alert-warning">
+                <button type="button" class="close" data-dismiss="alert">&times;</button>
+                {{message}}
+            </div>
+        {% endfor %}
+
+        <form method="post">
+            <div class="input-group">
+                <span class="input-group-addon" style="text-align: left">Ваш номер телефона:</span>
+                <input class="form-control" name="phone" placeholder="Номер телефона" type="tel" value="{{ user.phone }}" required>
+            </div>
+
+            <div class="input-group" style="margin-top: 10px">
+                <span class="input-group-addon" style="text-align: left">Новый пароль:</span>
+                <input class="form-control" name="new-pass" placeholder="Введите новый пароль" type="password" required>
+            </div>
+            <div class="input-group" style="margin-top: 10px; text-align: left">
+                <span class="input-group-addon" style="text-align: left">Повторить пароль:</span>
+                <input class="form-control" name="new-pass-repeat" placeholder="Повторите новый пароль" type="password" required>
+            </div>
+
+            <div class="row text-center" style="margin-top:10px">
+                <button type="submit" class="btn btn-success una">Обновить</button>
+                <button type="reset" class="btn btn-warning">Сбросить</button>
+            </div>
+        </form>
+    </div>
+
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+{% endblock %}
