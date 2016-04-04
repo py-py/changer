@@ -7,6 +7,7 @@ __pycache__/
 *.so
 
 # Distribution / packaging
+.idea/
 .Python
 env/
 build/
@@ -91,3 +92,5 @@ ENV/
 #Ipython Notebook
 .ipynb_checkpoints
 >>>>>>> 516e80bed11fcf9c20d60e8d7071dd37043280dd
+
+#
