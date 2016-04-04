@@ -1,6 +1,6 @@
 from app import create_app
 from app import db
-from app.models import User, Role, Cashes, Deals, Currency, Transaction, TypeOfOperation
+from app.models import User, Role, Cashes, Deals, Currency, Transaction, TypeOfOperation, GroupOfCashes
 from flask.ext.migrate import MigrateCommand, Migrate
 from flask.ext.script import Manager, Shell
 __author__ = 'py'
@@ -13,13 +13,15 @@ migrate = Migrate(app, db)
 
 def make_shell_context():
     return dict(app=app, db=db,
-                User=User,
-                Role=Role,
                 Cashes=Cashes,
-                Deals=Deals,
-                Transaction=Transaction,
                 Currency=Currency,
-                TypeOfOperation=TypeOfOperation)
+                Deals=Deals,
+                GroupOfCashes=GroupOfCashes,
+                Role=Role,
+                Transaction=Transaction,
+                TypeOfOperation=TypeOfOperation,
+                User=User
+                )
 
 manager.add_command("shell", Shell(make_context=make_shell_context))
 manager.add_command('db', MigrateCommand)

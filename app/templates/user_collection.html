@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %} Changer-Совершенные операции {% endblock title%}
+{% block title %} Changer-Совершенные инкассации {% endblock title%}
 
 {% block styles %}
     {{ super() }}
@@ -10,7 +10,7 @@
 
 {% block content %}
     <div class="col-sm-4 col-sm-offset-4 loginpage">
-        <p><h2 class="text-center">Совершенные операции</h2></p>
+        <p><h2 class="text-center">Совершенная инкассация</h2></p>
 
         <div class="row">
             <form method="post">
@@ -47,7 +47,7 @@
                         {% endfor %}
                     </select>
                 </div>
-                <div class="row text-center mt">
+                <div class="row text-center" style="margin-top: 10px">
                     <button type="submit" class="btn btn-success">Получить данные</button>
                     <button type="reset" class="btn btn-warning">Сбросить</button>
                 </div>
@@ -56,43 +56,39 @@
     </div>
 
     <div class="col-sm-8 col-sm-offset-2">
-
-    <div class="row" style="margin-top: 20px">
-        <table class='table table-hover'>
-            <thead>
-            <tr>
-                <th>№</th>
-                <th>Адрес</th>
-                <th>Дата</th>
-                <th>Операция</th>
-                <th>Валюта</th>
-                <th>Курс</th>
-                <th>Сумма</th>
-                <th>Гривна</th>
-                <th>Отменить</th>
-
-            </tr>
-            </thead>
-            <tbody>
-            {% for i in trans %}
+        <div class="row" style="margin-top: 20px">
+            <table class='table table-hover'>
+                <thead>
                 <tr>
-                    <th class='row'> {{ loop.index }}</th>
-                    <td>{{ i.cash.branch }}, {{ i.cash.address }}</td>
-                    <td>{{ moment(i.date_trans).format('LLL') }}</td>
-                    <td>{{ i.oper.rusname }}</td>
-                    <td>{{ i.currency.name }}</td>
-                    <td>{{ i.course }}</td>
-                    <td>{{ i.count }}</td>
-                    <td>{{ i.result }}</td>
-                    <td class="text-center">
-                        <button class="btn btn-xs btn-danger"  data-toggle="modal" data-target=".bs-example-modal-sm" data-branch="{{ i.id }}" disabled>x</button>
-                        0 сек.
-                    </td>
+                    <th>№</th>
+                    <th>Адрес</th>
+                    <th>Дата</th>
+                    <th>Операция</th>
+                    <th>UAH</th>
+                    <th>USD</th>
+                    <th>EUR</th>
+                    <th>RUB</th>
+                    <th>Заметки</th>
                 </tr>
-            {% endfor %}
-            </tbody>
+                </thead>
+                <tbody>
+                {% for i in inkasses %}
+                    <tr>
+                        <th class='row'> {{ loop.index }}</th>
+                        <td>{{ i.cash.branch }}, {{ i.cash.address }}</td>
+                        <td>{{ moment(i.date_collection).format('LLL') }}</td>
+                        <td>{{ i.oper.rusname }}</td>
+                        <td>{{ i.count_uah }}</td>
+                        <td>{{ i.count_usd }}</td>
+                        <td>{{ i.count_eur }}</td>
+                        <td>{{ i.count_rub }}</td>
+                        <td>{{ i.inkass_notes }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
 
-        </table>
+            </table>
+        </div>
     </div>
 
 {% endblock %}

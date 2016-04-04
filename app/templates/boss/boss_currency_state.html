@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block title %} Changer-Отчет кассы {% endblock title%}
+
+
+{% block content %}
+    <div class="container loginpage">
+        <div class="col-sm-10 col-sm-offset-1">
+            <table id="currency_state" class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th rowspan="2" style="vertical-align: middle; text-align: center">Branch</th>
+                        <th colspan="2" style="text-align: center">USD</th>
+                        <th colspan="2" style="text-align: center">EUR</th>
+                        <th colspan="2" style="text-align: center">RUB</th>
+                    </tr>
+                    <tr>
+                        <td style="text-align: center">Куплено / Курс</td>
+                        <td style="text-align: center">Продано / Курс</td>
+                        <td style="text-align: center">Куплено / Курс</td>
+                        <td style="text-align: center">Продано / Курс</td>
+                        <td style="text-align: center">Куплено / Курс</td>
+                        <td style="text-align: center">Продано / Курс</td>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for cash, state in d.items() %}
+                    <tr>
+                        <td data-id="{{ cash.id }}">{{ cash.branch }}, {{ cash.address }}</td>
+                        <td>{{ state['USD']['BUY']['sum'] }} / <span data-fixed="courseFixed">{{ state['USD']['BUY']['avarage_course'] }}</span></td>
+                        <td>{{ state['USD']['SELL']['sum'] }} / <span data-fixed="courseFixed">{{ state['USD']['SELL']['avarage_course'] }}</span></td>
+                        <td>{{ state['EUR']['BUY']['sum'] }} / <span data-fixed="courseFixed">{{ state['EUR']['BUY']['avarage_course'] }}</span></td>
+                        <td>{{ state['EUR']['SELL']['sum'] }} / <span data-fixed="courseFixed">{{ state['EUR']['SELL']['avarage_course'] }}</span></td>
+                        <td>{{ state['RUB']['BUY']['sum'] }} / <span data-fixed="courseFixed">{{ state['RUB']['BUY']['avarage_course'] }}</span></td>
+                        <td>{{ state['RUB']['SELL']['sum'] }} / <span data-fixed="courseFixed">{{ state['RUB']['SELL']['avarage_course'] }}</span></td>
+
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+    {{ super() }}
+    <script src="{{ url_for('static', filename='moment-with-locales.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='moment_changer.js') }}"></script>
+    {{ moment.lang('ru') }}
+    <script>
+
+    var Fixed = (function() {
+        var pr = {},
+            pub = {};
+
+        pr.courseFixed = function(data) {
+            data.each(function(i,v) {
+                $(v).text(parseFloat($(v).text()).toFixed(4))
+            });
+        };
+
+        pub.setHandlers = function() {
+            data = $('[data-fixed]');
+            pr.courseFixed(data);
+        };
+
+        return pub;
+    })();
+
+
+    $(document).ready(function() {
+        Fixed.setHandlers();
+    });
+    </script>
+{% endblock %}

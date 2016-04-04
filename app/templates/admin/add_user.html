@@ -12,32 +12,51 @@
             </div>
         {% endfor %}
         <form method="post">
+
             <div class="input-group">
-                <span class="input-group-addon">Username:</span>
+                <span class="input-group-addon" style="font-weight: bold">Username</span>
                 <input class="form-control" name="username" placeholder="Username" type="text" required>
             </div>
-            <p></p>
-            <div class="input-group">
-                <span class="input-group-addon">Password:</span>
+
+            <div class="input-group mt">
+                <span class="input-group-addon" style="font-weight: bold">Password</span>
                 <input class="form-control" name="password" placeholder="Password" type="text" required>
             </div>
-            <p></p>
-            <div class="input-group">
-                <span class="input-group-addon">Роль пользователя:</span>
+
+            <div class="input-group mt">
+                <span class="input-group-addon">Роль пользователя</span>
                 <select class="form-control" name="select_role">
                     {%  for r in roles %}
-                        <option value="{{ r.id }}">
-                            <span>{{ r.description }}</span>
+                        {% if r.permissions == permission %}
+                            <option value="{{ r.id }}" data-collector="1">
+                                {% else %}
+                            <option value="{{ r.id }}" data-collector="0">
+                        {% endif %}
+                    <span>{{ r.description }}</span>
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="input-group mt">
+                <span class="input-group-addon">Группа касса</span>
+                <select class="form-control" name="select_group" disabled>
+                    {%  for g in groups %}
+                        <option value="{{ g.id }}">
+                            <span>{{ g.group_branch }}, {{ g.group_description }}</span>
                         </option>
                     {% endfor %}
                 </select>
             </div>
-            <p></p>
-            <div class="row text-center" style="margin-top:10px">
+
+
+
+            <div class="row text-center mt">
                 <button type="submit" class="btn btn-success" disabled>Добавить Пользователя</button>
                 <button type="reset" class="btn btn-warning">Сбросить</button>
             </div>
         </form>
+
         <div>
             <p><h2 class="text-center">Список существующих Пользователей</h2></p>
             <div class="row">
@@ -59,7 +78,7 @@
                             <td class="text-center">{{ moment(u.member_since).format('LLL') }}</td>
                             <td class="text-center">{{ u.cash.branch }}</td>
                             <td class="text-center">
-                                <button class="btn btn-xs btn-danger" disabled>Change</button>
+                                <button class="btn btn-xs btn-danger"  data-toggle="modal" data-target=".bs-example-modal-sm" data-username="{{ u.username }}">Change</button>
                                 {% if u.status %}
                                     <button class="btn btn-xs btn-danger" data-uid="{{ u.id }}" data-user-state="{% if u.status %}1{% else %}0{% endif %}">Off</button>
                                 {% else %}
@@ -71,8 +90,45 @@
                     </tbody>
                 </table>
             </div>
-
         </div>
+
+        <!--Modal window-->
+        <div class="modal fade bs-example-modal-sm" tabindex="-1" role="dialog" aria-labelledby="mySmallModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-md">
+                <div class="modal-content">
+                    <form action="{{ url_for('admin.edit_user') }}" method="post">
+
+                        <div class="modal-header">
+                            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                            <h4 class="modal-title text-center" id="mySmallModalLabel">Изменение данных о сотруднике</h4>
+                        </div>
+
+                        <div class="modal-body">
+                            <div class="input-group">
+                                <span class="input-group-addon" style="font-weight: bold">Username</span>
+                                <input class="form-control" name="modal-username" placeholder="Username" type="text" readonly>
+                            </div>
+                            <div class="input-group mt">
+                                <span class="input-group-addon" style="font-weight: bold">Password</span>
+                                <input class="form-control" name="modal-password" placeholder="Password" type="password">
+                            </div>
+                        </div>
+
+                        <div class="modal-footer">
+                            <div class="row text-center">
+                                <button type="submit" class="btn btn-success">Подтвердить</button>
+                                <button type="reset" class="btn btn-danger" class="close" data-dismiss="modal" aria-hidden="true">Отменить</button>
+                            </div>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+        </div>
+        <!--End modal window-->
+
+
+
     </div>
 
 {% endblock %}
@@ -137,7 +193,7 @@
             var pub = {},
                 pr = {};
 
-            pr.url = '{{ url_for('admin.check_login') }}'
+            pr.url = '{{ url_for('admin.check_user') }}'
 
             pr.checkLogin = function(param, cbFunc){
                 $.get({
@@ -151,18 +207,93 @@
             pub.active_button = function() {$('[type="submit"]').prop('disabled', false)};
             pub.deactive_button = function() {$('[type="submit"]').prop('disabled', true)};
 
-            pub.setHandlers = function(){
-                $('[name="username"]').keyup(function(evData){
-                    var data = {
-                        name: evData.target.value
+            pr.mainFunction = function(evData) {
+                var data = {
+                    name: evData.target.value
+                };
+
+                cbFunc = function(dataFromServer){
+                    dataFromServer.can ? pub.active_button() : pub.deactive_button();
+                };
+
+                pr.checkLogin(data, cbFunc);
+            };
+
+            pub.setHandlers = function() {
+                $('[name="username"]').keyup(function (evData) {
+                    pr.mainFunction(evData);
+                });
+
+                $('[name="username"]').change(function (evData) {
+                    pr.mainFunction(evData);
+                });
+
+            };
+
+            return pub;
+        })();
+
+        var RecogniseCollector = (function() {
+            var pub = {},
+                pr = {};
+
+            pr.getState = function(data) {
+                var state = $(data).find(':selected').attr('data-collector')
+                return parseInt(state)
+            };
+
+            pr.checkButton = function(data) {
+                pr.getState(data) ? pub.activate() : pub.deactivate()
+            };
+
+            pub.activate = function() {$('[name="select_group"]').prop('disabled', false)};
+            pub.deactivate = function() {$('[name="select_group"]').prop('disabled', true)};;
+
+            pub.setHandlers = function() {
+                $('[name="select_role"]').click(function() {
+                    var selected = this;
+                    pr.checkButton(selected);
+                })
+
+            };
+
+            return pub;
+        }());
+
+        var ModalUser = (function () {
+            var pr = {},
+                pub = {};
+
+            pr.username = '';
+            pr.url = '{{ url_for('admin.get_info_user') }}';
+
+            pr.getInfobyAjax = function (data) {
+                $.get({
+                    url: pr.url,
+                    dataType: 'json',
+                    data: data,
+                    success: pr.cbFuncGetInfo
+            });
+            };
+
+            pr.cbFuncGetInfo = function (params) {
+                pr.updateUsername(pr.username);
+            };
+
+            pr.updateUsername = function(name) {
+                $('[name="modal-username"]').val(name);
+            };
+
+            pub.setHandlers = function () {
+                $('[data-toggle="modal"]').click(function(evData){
+                    pr.username = evData.target.attributes['data-username'].value;
+                    pr.modal_username = $('[name="modal-username"]');
+
+                    data = {
+                        user: pr.username,
                     };
 
-                    cbFunc = function(dataFromServer){
-                        console.log(dataFromServer);
-                        dataFromServer.can ? pub.active_button() : pub.deactive_button();
-                    };
-
-                    pr.checkLogin(data, cbFunc);
+                    pr.getInfobyAjax(data);
                 });
             };
 
@@ -171,7 +302,9 @@
 
         $(document).ready(
                 CheckLogin.setHandlers(),
-                ChangeLogin.setHandlers()
+                ChangeLogin.setHandlers(),
+                RecogniseCollector.setHandlers(),
+                ModalUser.setHandlers()
         );
     </script>
 {% endblock %}

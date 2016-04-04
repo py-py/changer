@@ -2,47 +2,119 @@ from . import admin
 import json
 from app import db
 from app.decorators import admin_required
-from app.models import Role, User, Cashes, Deals
+from app.models import Role, User, Cashes, Deals, GroupOfCashes
 from flask import request, url_for, redirect, render_template, flash
 from flask.ext.login import login_required, current_user
 
 __author__ = 'py'
 
 
-
-
+# About Useres:
 @admin.route('/add_user', methods=['GET', 'POST'])
 @login_required
 @admin_required
 def add_user():
+    groups = GroupOfCashes.query.all()
+
     roles = Role.query.order_by('permissions').all()
     users = User.query.order_by('id').all()
+    collector_permission = Role.query.filter_by(name='Collector').first().permissions
+
     if request.method == 'POST':
-        username_new = request.form['username']
-        password_new = request.form['password']
+        print(request.form)
+        username = request.form['username']
+        password = request.form['password']
         role_id = request.form['select_role']
-        user_new = User.query.filter_by(username=username_new).first()
+        group_id = request.form.get('select_group')
+
+        if not group_id:
+            group_id = GroupOfCashes.query.filter_by(group_branch='GR00').first().id
+
+        user_new = User.query.filter_by(username=username).first()
         if user_new is None:
-            user_new = User(username=username_new)
-            user_new.password = password_new
+            user_new = User(username=username,
+                            password=password)
+            user_new.group = GroupOfCashes.query.filter_by(id=group_id).first()
             user_new.role = Role.query.filter_by(id=role_id).first()
-        db.session.add(user_new)
+            db.session.add(user_new)
+            flash('Пользователь с именем %s успешно добавлен в базу.' % username)
+        else:
+            flash('Пользователь с именем %s уже есть в базе. Выбирете другое имя.' % username)
         return redirect(url_for('admin.add_user'))
-    return render_template('admin/add_user.html', roles=roles, users=users)
+    return render_template('admin/add_user.html',
+                           users=users,
+                           roles=roles,
+                           permission=collector_permission,
+                           groups=groups)
 
 
+@admin.route('/close_user')
+@login_required
+@admin_required
+def close_user():
+    user_state = int(request.args['state'])
+    user_id = request.args['id']
+
+    user = User.query.filter_by(id=user_id).first()
+
+    if user.status == user_state:
+        user.status = not user_state
+        db.session.add(user)
+        return json.dumps({'id': user.id, 'state': user.status})
+    else:
+        return json.dumps({'id': 0, 'state': 0})
+
+
+@admin.route('/check_user')
+@login_required
+@admin_required
+def check_user():
+    username = request.args['name']
+
+    if len(username) >= 2:
+        user = User.query.filter_by(username=username).first()
+        return json.dumps({'can': True}) if not user else json.dumps({'can': False})
+    else:
+        return json.dumps({'can': False})
+
+
+@admin.route('/get_info_user')
+@login_required
+@admin_required
+def get_info_user():
+    username = request.args['user']
+    u = User.query.filter_by(username=username).first()
+    return json.dumps({'user': u.username, 'role': u.role.name})
+
+
+@admin.route('/edit_user', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def edit_user():
+    if request.method == 'POST':
+        username = request.form['modal-username']
+        password = request.form['modal-password']
+        u = User.query.filter_by(username=username).first()
+        u.password = password
+        db.session.add(u)
+        return redirect(url_for('admin.add_user'))
+
+
+# About Cashes:
 @admin.route('/add_cash', methods=['GET', 'POST'])
 @login_required
 @admin_required
 def add_cash():
     cashes = Cashes.query.order_by('branch').all()
+    groups = GroupOfCashes.query.order_by('group_branch').all()
+
     if request.method == 'POST':
         branch = request.form['branch'].upper()
-        city = request.form['city']
         address = request.form['address']
-        phone = request.form['phone']
-        #
-        cash = Cashes(branch=branch, city=city, address=address, phone=phone)
+        group = request.form['select_group']
+        group = GroupOfCashes.query.filter_by(id=group).first()
+
+        cash = Cashes(branch=branch, address=address, group=group)
         db.session.add(cash)
 
         deal = Deals(user_id=current_user.id,
@@ -53,9 +125,9 @@ def add_cash():
                      count_rub=0)
         db.session.add(deal)
 
-        flash("Добавлена новая касса %s в городе %s по адресу: %s" % (branch, city, address))
+        flash("Добавлена новая касса %s по адресу: %s" % (branch, address))
         return redirect(url_for('admin.add_cash'))
-    return render_template('admin/add_cash.html', cashes=cashes)
+    return render_template('admin/add_cash.html', cashes=cashes, groups=groups)
 
 
 @admin.route('/close_cash')
@@ -88,31 +160,64 @@ def check_cash():
         return json.dumps({'can': False})
 
 
-@admin.route('/close_user')
+@admin.route('/get_info_cash')
 @login_required
 @admin_required
-def close_user():
-    user_state = int(request.args['state'])
-    user_id = request.args['id']
-
-    user = User.query.filter_by(id=user_id).first()
-
-    if user.status == user_state:
-        user.status = not user_state
-        db.session.add(user)
-        return json.dumps({'id': user.id, 'state': user.status})
-    else:
-        return json.dumps({'id': 0, 'state': 0})
+def get_info_cash():
+    branch = request.args['branch'].upper()
+    b = Cashes.query.filter_by(branch=branch).first()
+    return json.dumps({'branch': b.branch,
+                       'address': b.address,
+                       'status': b.status})
 
 
-@admin.route('/check_login')
+@admin.route('/edit_cash', methods=['GET', 'POST'])
 @login_required
 @admin_required
-def check_login():
-    username = request.args['name']
+def edit_cash():
+    if request.method == 'POST':
+        branch = request.form['modal-branch']
+        address = request.form['modal-address']
+        group = request.form['modal-select_group']
 
-    if len(username) >= 2:
-        user = User.query.filter_by(username=username).first()
-        return json.dumps({'can': True}) if not user else json.dumps({'can': False})
-    else:
+        branch = Cashes.query.filter_by(branch=branch).first()
+        branch.address = address
+        branch.group = GroupOfCashes.query.filter_by(id=int(group)).first()
+
+        db.session.add(branch)
+        return redirect(url_for('admin.add_cash'))
+
+# About Groupes:
+@admin.route('/add_group', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def add_group():
+    list_group = []
+    groups = GroupOfCashes.query.order_by('group_branch').all()
+
+    for g in groups:
+        cashes = Cashes.query.filter_by(group=g).all()
+        collectors = User.query.filter_by(group=g).all()
+        list_group.append((g, cashes, collectors))
+
+    if request.method == 'POST':
+        group_branch = request.form['branch']
+        description = request.form['description']
+        group = GroupOfCashes(group_branch=group_branch,
+                              group_description=description)
+        db.session.add(group)
+        flash('Добавлена новая группа %s c описание района %s' % (group_branch, description))
+        return redirect(url_for('admin.add_group'))
+    return render_template('admin/add_group.html', list_group=list_group)
+
+
+@admin.route('/check_group')
+@login_required
+@admin_required
+def check_group():
+    group_name = request.args['branch'].upper()
+    print(GroupOfCashes.query.filter_by(group_branch=group_name).first())
+    if GroupOfCashes.query.filter_by(group_branch=group_name).first():
         return json.dumps({'can': False})
+    else:
+        return json.dumps({'can': True})

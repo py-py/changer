@@ -18,3 +18,8 @@ def permission_required(permission):
 
 def admin_required(f):
     return permission_required(Permission.ADMINISTER)(f)
+
+
+def user_required(f):
+    return permission_required(Permission.MAKE_OPERATION)(f)
+

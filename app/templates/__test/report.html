@@ -1,0 +1,39 @@
+
+
+<div class="container">
+        <table class="table table-bordered" id="report_table">
+            <thead>
+                <tr>
+                    <th>Валюта</th>
+                    <th>Операция</th>
+                    <th>Курс операции</th>
+                    <th>Сумма</th>
+                    <th>Сумма в грн.</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% set count_oper_USD = data['BUY']['USD']|length if data['BUY']['USD']|length > data['SELL']['USD']|length else data['SELL']['USD']|length %}
+            {% for k in data['BUY']['USD'] %}
+                <tr>
+                    {% if loop.first %}
+                    <td rowspan="{{ data['BUY']['USD']|length + data['SELL']['USD']|length }}" style="vertical-align: middle; text-align: center">USD</td>
+                    <td rowspan="{{ data['BUY']['USD']|length }}" style="vertical-align: middle; text-align: center">Покупка</td>
+                    {% endif %}
+                    <td>{{ k }}</td>
+                    <td>{{ data['BUY']['USD'][k] }}</td>
+                    <td>{{ k*data['BUY']['USD'][k] }}</td>
+                </tr>
+            {% endfor %}
+            {% for k in data['SELL']['USD'] %}
+                <tr>
+                    {% if loop.first %}
+                    <td rowspan="{{ data['SELL']['USD']|length }}" style="vertical-align: middle; text-align: center">Продажа</td>
+                    {% endif %}
+                    <td>{{ k }}</td>
+                    <td>{{ data['SELL']['USD'][k] }}</td>
+                    <td>{{ k*data['SELL']['USD'][k] }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>

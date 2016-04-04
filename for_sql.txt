@@ -3,51 +3,50 @@ db.drop_all()
 db.create_all()
 Role.insert_roles()
 User.insert_user()
+
+GroupOfCashes.insert_group()
 Cashes.insert_cashes()
+
 Currency.insert_currency()
 TypeOfOperation.insert_operation()
 
-py = User(username='py', fname='Руслан', sname='Валеев', phone='+380506624980', password='py', role=Role.query.filter_by(default=True).first())
 
-db.session.add(py)
+role_user = Role.query.filter_by(default=True).first()
+role_collector = Role.query.filter_by(name='Collector').first()
+py = User(username='py', password='py', role=role_user)
+dima = User(username='dima', password='dima', role=role_collector)
+
+
+db.session.add(py, dima)
 db.session.commit()
 
 
-#######################################################
-pattern="[0-9]+(\\.[0-9][0-9]?)?"
-###########
+second_group = GroupOfCashes(group_branch='GR01',group_description="Позняки")
+db.session.add(second_group)
+db.session.commit()
 
-Страница Начальника
-1)Вывести состояние касс;
-for(var i=0; i<$("tbody tr").length; i++) {console.log($("tbody tr")[i])}
+c = Cashes(branch='CH01', city='г.Киев', address='ул.Малышка, 3', phone='+380501234567', group=second_group)
+db.session.add(c)
+db.session.commit()
 
 
-a = $("tbody tr:eq(0)").find('td:eq(1)').text()
-b = $("tbody tr:eq(1)").find('td:eq(1)').text()
-parseFloat(a)+parseFloat(b)
-
-##############
+#####################################
+#####################################
 
 Страница транзакции и босса:
 1) проверка на ввод даты - неактивная кнопка;
 
 Страница операции:
-1) добавить колонку тип операции: покупка или продажа;
-2)проверка на отрицательный баланс;
-
-Страница Инкассации:
-1)Проверка на отрицательный баланс;
-
-
-#####################################
-Страница пользователя
-1)Логика доделать;
+1)добавить колонку тип операции: покупка или продажа;
 
 Добавление кассы
-1)номер телефона кассы/объекта
+1)Перезакрепить за другой группой;
+
 
 
 #####################################
+#####################################
+
 Примочки:
 
 # Об кнопке ENTER:

@@ -1,0 +1,43 @@
+body, tr, td, th {
+    text-align: center;
+}
+
+.currname {
+
+    height: 100%;
+}
+
+.start_balance {
+    height: 100%;
+
+}
+
+.buyColumns {
+    height: 100%;
+
+}
+
+.sellColumns {
+    height: 100%;
+
+}
+
+.end_balance {
+    height: 100%;
+}
+
+.table_header, .cur_data {
+    border-bottom: 2px solid;
+}
+
+.table_header .currname {
+    padding-top: 15px;
+}
+
+.table_header .start_balance {
+    padding-top: 15px;
+}
+
+.table_header .end_balance {
+    padding-top: 15px;
+}

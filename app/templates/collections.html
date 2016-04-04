@@ -1,0 +1,271 @@
+{% extends "base.html" %}
+
+{% block title %} Changer-Инкассация {% endblock title%}
+
+{% block content %}
+    <div class="container">
+        <div class="col-md-6 col-md-offset-3 loginpage">
+
+            <div class="row">
+                <h2 class="text-center">Остатки по кассе</h2>
+                <table class="table" id="state_cash">
+                    <thead>
+                    <tr>
+                        <th class="text-center">UAH</th>
+                        <th class="text-center">USD</th>
+                        <th class="text-center">EUR</th>
+                        <th class="text-center">RUB</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr>
+                        <td id="balance_UAH" class="text-center">{{ cash_state.count_uah }}</td>
+                        <td id="balance_USD" class="text-center">{{ cash_state.count_usd }}</td>
+                        <td id="balance_EUR" class="text-center">{{ cash_state.count_eur }}</td>
+                        <td id="balance_RUB" class="text-center">{{ cash_state.count_rub }}</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+
+            {% with danger = get_flashed_messages(category_filter=["danger"]) %}
+                {% if danger %}
+                    {% for message in danger %}
+                        <div id="alert_message" class="alert alert-danger">
+                            <button type="button" class="close" data-dismiss="alert">&times;</button>
+                            {{message}}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            {% with success = get_flashed_messages(category_filter=["success"]) %}
+                {% if success %}
+                    {% for message in success %}
+                        <div id="alert_message" class="alert alert-success">
+                            <button type="button" class="close" data-dismiss="alert">&times;</button>
+                            {{message}}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <div class="row">
+                <h2 class="text-center">Инкассация</h2>
+                <form method="post">
+                    <div class="row">
+                        <div id="oper" class="btn-group btn-group-justified" data-toggle="buttons">
+                            <label class="btn btn-success" data-op="GET">
+                                <input type="radio" name="oper" value="GET">
+                                Получить
+                            </label>
+                            <label class="btn btn-success" data-op="GIVE">
+                                <input type="radio" name="oper" value="GIVE">
+                                Передать
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="input-group mt">
+                        <span class="input-group-addon">Инкассатор:</span>
+                        <select class="form-control" name="select_collector">
+                            {%  for person in collectors %}
+                                <option value="{{ person.id }}">
+                                    <span>{{ person.username }}</span>
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="input-group mt">
+                        <span class="input-group-addon">Гривна:</span>
+                        <input class="form-control" name="UAH" placeholder="Сумма в гривнах." type="number" step="0.01"  value="0" autocomplete="off" required>
+                    </div>
+
+                    <div class="input-group mt">
+                        <span class="input-group-addon">Доллар:</span>
+                        <input class="form-control" name="USD" placeholder="Сумма в долларах." type="number" step="0.01"  value="0" autocomplete="off" required>
+                    </div>
+
+                    <div class="input-group mt">
+                        <span class="input-group-addon">Евро:</span>
+                        <input class="form-control" name="EUR" placeholder="Сумма в евро." type="number" step="0.01"  value="0" autocomplete="off" required>
+                    </div>
+
+                    <div class="input-group mt">
+                        <span class="input-group-addon">Рубли:</span>
+                        <input class="form-control" name="RUB" placeholder="Сумма в рублях." type="number" step="0.01"  value="0" autocomplete="off" required>
+                    </div>
+
+                    <div class="form-group mt">
+                        <label for="comment">Комментарии:</label>
+                        <textarea class="form-control" name="comment" rows="2" id="comment" placeholder="Введите ФИО инкассации, дополнительный заметки о проведенной инкассации."></textarea>
+                    </div>
+
+                    <div class="row text-center">
+                        <button type="button" class="btn btn-success" data-toggle="modal" data-target=".bs-example-modal-sm" disabled>Провести инкассацию</button>
+                        <button type="reset" class="btn btn-warning">Сбросить</button>
+                    </div>
+
+                    <!--Модальное окно-->
+                    <div class="modal fade bs-example-modal-sm" tabindex="-1" role="dialog" aria-labelledby="mySmallModalLabel" aria-hidden="true">
+                        <div class="modal-dialog modal-md">
+                            <div class="modal-content">
+
+                                <div class="modal-header">
+                                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                    <h4 class="modal-title text-center" id="mySmallModalLabel">Подтверждение операции</h4>
+                                </div>
+
+                                <div class="modal-body">
+                                    <p>Вы подтверждаете проведение инкассации о передачи/приему:</p>
+                                    <div class="row">
+                                        <table class="table">
+                                            <thead>
+                                            <tr>
+                                                <th class="text-center">UAH</th>
+                                                <th class="text-center">USD</th>
+                                                <th class="text-center">EUR</th>
+                                                <th class="text-center">RUB</th>
+                                            </tr>
+                                            </thead>
+                                            <tbody>
+                                            <tr>
+                                                <td class="text-center" id="modal-uah">0.0</td>
+                                                <td class="text-center" id="modal-usd">0.0</td>
+                                                <td class="text-center" id="modal-eur">0.0</td>
+                                                <td class="text-center" id="modal-rub">0.0</td>
+                                            </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                <div class="modal-footer">
+                                    <div class="row text-center">
+                                        <button type="submit" class="btn btn-success">Провести операцию</button>
+                                        <button type="reset" class="btn btn-danger" class="close" data-dismiss="modal" aria-hidden="true">Отменить</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!--Модальное окно-->
+
+                </form>
+            </div>
+
+        </div>
+    </div>
+{% endblock %}
+
+
+{% block scripts %}
+    {{ super() }}
+    <script type="text/javascript">
+        var Collections = (function() {
+
+            var pub = {},
+                pr = {};
+
+            pr.balances = {
+                UAH: 0,
+                USD: 0,
+                EUR: 0,
+                RUB: 0
+            };
+
+            pr.numbers = {
+                UAH: 0,
+                USD: 0,
+                EUR: 0,
+                RUB: 0
+            };
+
+            pr.direction = '';
+
+            //
+            pr.updateBalances = function() {
+                pr.balances.UAH = parseFloat($('#balance_UAH').text());
+                pr.balances.USD = parseFloat($('#balance_USD').text());
+                pr.balances.EUR = parseFloat($('#balance_EUR').text());
+                pr.balances.RUB = parseFloat($('#balance_RUB').text());
+            };
+
+            pr.updateNumbers = function() {
+                pr.numbers.UAH = parseFloat($("[name='UAH']").val()) || 0;
+                pr.numbers.USD = parseFloat($("[name='USD']").val()) || 0;
+                pr.numbers.EUR = parseFloat($("[name='EUR']").val()) || 0;
+                pr.numbers.RUB = parseFloat($("[name='RUB']").val()) || 0;
+            };
+
+            pr.updateDirection = function(direction) {
+                pr.direction = direction;
+            };
+
+            //
+            pr.checkBalance = function() {
+                pr.updateBalances();
+                pr.updateNumbers();
+
+                var isCorrect = true;
+
+                for (var i in pr.balances) {
+                    if (pr.balances[i]-pr.numbers[i] < 0) {
+                        isCorrect = false;
+                    };
+                };
+
+                return isCorrect;
+            };
+
+            //
+            pr.isIfConditionsCorrect = function() {
+                if (pr.direction === 'GIVE') {
+                    if (pr.direction && pr.checkBalance()) {
+                        pub.active_button();
+                    } else {
+                        pub.deactive_button();
+                    }
+                } else if (pr.direction === 'GET') {
+                    pub.active_button();
+                } else {
+                    pub.deactive_button();
+                }
+            };
+
+
+            pub.active_button = function() {$('button[data-target=".bs-example-modal-sm"]').prop('disabled', false)};
+            pub.deactive_button = function() {$('button[data-target=".bs-example-modal-sm"]').prop('disabled', true)};
+
+            pub.setHandlers = function() {
+
+                $('#oper').click(function(evData){
+                    var oper = evData.target.attributes['data-op'].value;
+                    pr.updateDirection(oper);
+                    pr.isIfConditionsCorrect();
+                })
+
+                $('.input-group input').keyup(function() {
+                    pr.updateBalances();
+                    pr.isIfConditionsCorrect();
+                })
+
+
+                $('button[data-target=".bs-example-modal-sm"]').click(function(){
+                    pr.updateNumbers();
+                    $('#modal-uah').text(pr.numbers.UAH);
+                    $('#modal-usd').text(pr.numbers.USD);
+                    $('#modal-eur').text(pr.numbers.EUR);
+                    $('#modal-rub').text(pr.numbers.RUB);
+                });
+
+            };
+
+            return pub;
+        })();
+
+        $(document).ready(Collections.setHandlers());
+    </script>
+{% endblock %}

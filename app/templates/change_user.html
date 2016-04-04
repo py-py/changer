@@ -8,7 +8,7 @@
 {% endblock %}
 
 {% block content %}
-    <div class="col-sm-6 col-sm-offset-3 loginpage" xmlns="http://www.w3.org/1999/html">
+    <div class="col-sm-6 col-sm-offset-3 loginpage">
         <p><h2 class="text-center">Редактирование пользователя {{ user.fname }}</h2></p>
 
         {% for message in get_flashed_messages() %}
@@ -19,22 +19,17 @@
         {% endfor %}
 
         <form method="post">
-            <div class="input-group">
-                <span class="input-group-addon" style="text-align: left">Ваш номер телефона:</span>
-                <input class="form-control" name="phone" placeholder="Номер телефона" type="tel" value="{{ user.phone }}" required>
-            </div>
-
-            <div class="input-group" style="margin-top: 10px">
-                <span class="input-group-addon" style="text-align: left">Новый пароль:</span>
+            <div class="input-group mt">
+                <span class="input-group-addon">Новый пароль:</span>
                 <input class="form-control" name="new-pass" placeholder="Введите новый пароль" type="password" required>
             </div>
-            <div class="input-group" style="margin-top: 10px; text-align: left">
-                <span class="input-group-addon" style="text-align: left">Повторить пароль:</span>
+            <div class="input-group mt">
+                <span class="input-group-addon">Повторить пароль:</span>
                 <input class="form-control" name="new-pass-repeat" placeholder="Повторите новый пароль" type="password" required>
             </div>
 
-            <div class="row text-center" style="margin-top:10px">
-                <button type="submit" class="btn btn-success una">Обновить</button>
+            <div class="row text-center mt">
+                <button type="submit" class="btn btn-success" disabled>Обновить</button>
                 <button type="reset" class="btn btn-warning">Сбросить</button>
             </div>
         </form>
@@ -43,5 +38,48 @@
 {% endblock %}
 
 {% block scripts %}
-{{ super() }}
+    {{ super() }}
+    <script>
+
+    var Checker = (function() {
+        var pr = {},
+            pub = {};
+
+        pr.activate_button = function(btn) {
+            btn.prop('disabled', false)
+        };
+
+        pr.deactivate_buttion = function(btn) {
+            btn.prop('disabled',true)
+        };
+
+        pr.checkCondition = function() {
+            if (pr.pass1 === pr.pass2) {
+                pr.activate_button(pub.btn);
+            } else {
+                pr.deactivate_buttion(pub.btn);
+            }
+        };
+
+        pub.setHandlers = function() {
+            pub.btn = $('button[type="submit"]');
+
+            $('[name="new-pass"]').keyup(function() {
+                pr.pass1=$(this).val();
+                pr.checkCondition();
+            });
+
+            $('[name="new-pass-repeat"]').keyup(function() {
+                pr.pass2=$(this).val();
+                pr.checkCondition();
+            });
+
+        };
+
+        return pub;
+    })();
+
+    $(document).ready(Checker.setHandlers());
+
+    </script>
 {% endblock %}

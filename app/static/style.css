@@ -15,8 +15,9 @@
 }
 
 .input-group-addon:first-child{
-    width: 45%;
+    width: 30%;
     border-right: 0px none;
+    text-align: left;
 }
 
 .input-group {
@@ -33,4 +34,9 @@
 
 #modal_sum {
     font-weight: bolder;
+}
+
+
+.mt {
+    margin-top: 10px;
 }

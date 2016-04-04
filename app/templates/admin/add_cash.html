@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 
-{% block title %} Changer-Добавление нового Branch-a {% endblock title%}
+{% block title %} Changer-Управление Branch-ами {% endblock title%}
 
 {% block content %}
     <div class="col-sm-6 col-sm-offset-3 loginpage">
-        <p><h2 class="text-center">Добавление нового Branch-a</h2></p>
+        <p><h2 class="text-center">Управление Branch-ами</h2></p>
         {% for message in get_flashed_messages() %}
             <div id="alert_message" class="alert alert-warning">
                 <button type="button" class="close" data-dismiss="alert">&times;</button>
@@ -19,19 +19,21 @@
             </div>
 
             <div class="input-group" style="margin-top: 10px">
-                <span class="input-group-addon">Город Branch-a:</span>
-                <input class="form-control" name="city" placeholder="Введите город" type="text" required>
+                <span class="input-group-addon">Адрес/Прозвище:</span>
+                <input class="form-control" name="address" placeholder="Введите адрес или прозвище branch-a" type="text" required>
             </div>
 
             <div class="input-group" style="margin-top: 10px">
-                <span class="input-group-addon">Адрес Branch-a:</span>
-                <input class="form-control" name="address" placeholder="Введите адрес" type="text" required>
+                <span class="input-group-addon">Добавить в группу:</span>
+                <select class="form-control" name="select_group">
+                    {%  for g in groups %}
+                        <option value="{{ g.id }}">
+                            <span>{{ g.group_branch }}, {{ g.group_description }}</span>
+                        </option>
+                    {% endfor %}
+                </select>
             </div>
 
-            <div class="input-group" style="margin-top: 10px">
-                <span class="input-group-addon">Телефон Branch-a:</span>
-                <input class="form-control" name="phone" placeholder="Введите телефон branch-a" type="text" required>
-            </div>
 
             <div class="row text-center" style="margin-top:10px">
                 <button type="submit" class="btn btn-success" disabled>Добавить Branch</button>
@@ -47,10 +49,9 @@
                 <thead>
                 <tr>
                     <th class="text-center">Branch</th>
-                    <th class="text-center">Город</th>
-                    <th class="text-center">Адрес</th>
-                    <th class="text-center">Телефон</th>
+                    <th class="text-center">Адрес/Прозвище</th>
                     <th class="text-center">Начало работы</th>
+                    <th class="text-center">В группе</th>
                     <th class="text-center">Управление</th>
                 </tr>
                 </thead>
@@ -58,11 +59,11 @@
                 {% for c in cashes %}
                     <tr>
                         <td class="text-center">{{ c.branch }}</td>
-                        <td class="text-center">{{ c.city }}</td>
                         <td class="text-center">{{ c.address }}</td>
-                        <td class="text-center">{{ c.phone }}</td>
                         <td class="text-center">{{ moment(c.member_since).format('LLL') }}</td>
+                        <td class="text-center">{{ c.group.group_branch }}, {{ c.group.group_description }}</td>
                         <td class="text-center">
+                            <button class="btn btn-xs btn-danger"  data-toggle="modal" data-target=".bs-example-modal-sm" data-branch="{{ c.branch }}">Change</button>
                             {% if c.status %}
                                 <button class="btn btn-xs btn-danger" data-cash-id="{{ c.id }}" data-cash-state="{% if c.status %}1{% else %}0{% endif %}">Close</button>
                             {% else %}
@@ -76,6 +77,51 @@
         </div>
     </div>
 
+    <!--Modal Window-->
+    <div class="modal fade bs-example-modal-sm" tabindex="-1" role="dialog" aria-labelledby="mySmallModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-md">
+            <div class="modal-content">
+                <form action="{{ url_for('admin.edit_cash') }}" method="post">
+
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                        <h4 class="modal-title text-center" id="mySmallModalLabel">Изменение данных о Branch-е</h4>
+                    </div>
+
+                    <div class="modal-body">
+                        <div class="input-group">
+                            <span class="input-group-addon" style="font-weight: bold">Branch</span>
+                            <input class="form-control" name="modal-branch" placeholder="Branch" type="text" readonly>
+                        </div>
+                        <div class="input-group mt">
+                            <span class="input-group-addon">Адрес/Прозвище</span>
+                            <input class="form-control" name="modal-address" placeholder="Address" type="text" required>
+                        </div>
+                        <div class="input-group mt">
+                            <span class="input-group-addon">Добавить в группу:</span>
+                            <select class="form-control" name="modal-select_group">
+                                {%  for g in groups %}
+                                    <option value="{{ g.id }}">
+                                        <span>{{ g.group_branch }}, {{ g.group_description }}</span>
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer">
+                        <div class="row text-center">
+                            <button type="submit" class="btn btn-success">Подтвердить</button>
+                            <button type="reset" class="btn btn-danger" class="close" data-dismiss="modal" aria-hidden="true">Отменить</button>
+                        </div>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+    </div>
+    <!--End Windos-->
+
 {% endblock %}
 
 {% block scripts %}
@@ -85,7 +131,7 @@
     {{ moment.lang('ru') }}
 
     <script type="text/javascript">
-        var ChangeUser = (function(){
+        var ChangeStateCash = (function(){
 
             var pub = {},
                 pr = {};
@@ -135,8 +181,6 @@
             return pub;
         })();
 
-
-
         var CheckBranch = (function(){
             var pub = {},
                 pr = {};
@@ -155,18 +199,63 @@
             pub.active_button = function() {$('[type="submit"]').prop('disabled', false)};
             pub.deactive_button = function() {$('[type="submit"]').prop('disabled', true)};
 
+            pr.mainFunction = function(evData) {
+                var data = {
+                    name: evData.target.value
+                };
+
+                cbFunc = function(dataFromServer){
+                    console.log(dataFromServer);
+                    dataFromServer.can ? pub.active_button() : pub.deactive_button();
+                };
+
+                pr.checkCash(data, cbFunc);
+            };
+
             pub.setHandlers = function(){
                 $('[name="branch"]').keyup(function(evData){
-                    var data = {
-                        name: evData.target.value
+                    pr.mainFunction(evData)
+                });
+                $('[name="branch"]').change(function(evData){
+                    pr.mainFunction(evData)
+                });
+
+            };
+
+            return pub;
+        })();
+
+        var EditCash = (function () {
+            var pr = {},
+                pub = {};
+
+            pr.branch = '';
+            pr.url='{{ url_for('admin.get_info_cash') }}'
+
+            pr.cbFunc = function (data) {
+                $('[name="modal-branch"]').val(data.branch);
+                $('[name="modal-address"]').val(data.address);
+            };
+
+            pr.getInfobyAjax = function (data) {
+                $.get({
+                    url: pr.url,
+                    dataType: 'json',
+                    data: data,
+                    success: pr.cbFunc
+                });
+            };
+
+            pub.setHandlers = function() {
+                $('[data-toggle="modal"]').click(function(evData) {
+                    pr.branch = evData.target.attributes['data-branch'].value;
+
+                    data = {
+                        'branch': pr.branch
                     };
 
-                    cbFunc = function(dataFromServer){
-                        console.log(dataFromServer);
-                        dataFromServer.can ? pub.active_button() : pub.deactive_button();
-                    };
+                    pr.getInfobyAjax(data);
 
-                    pr.checkCash(data, cbFunc);
                 });
             };
 
@@ -175,7 +264,8 @@
 
         $(document).ready(
                 CheckBranch.setHandlers(),
-                ChangeUser.setHandlers()
+                ChangeStateCash.setHandlers(),
+                EditCash.setHandlers()
         );
 
     </script>

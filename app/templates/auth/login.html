@@ -35,7 +35,7 @@
                         <select class="form-control" name="select_ch">
                             {%  for c in cashes %}
                                 <option value="{{ c.branch }}">
-                                    Branch:&nbsp;<span>{{ c.branch }}</span>,&nbsp;<span>{{ c.city }}, {{ c.address }}</span>
+                                    Branch:&nbsp;<span>{{ c.branch }},</span>&nbsp;<span>{{ c.address }}</span>
                                 </option>
                             {% endfor %}
                         </select>

@@ -15,7 +15,7 @@ def load_user(user_id):
 
 class Permission:
     MAKE_OPERATION = 0x01
-    MAKE_INKASS = 0x02
+    MAKE_COLLECTION = 0x02
     SHOW_STATUS = 0x04
     MODERATE = 0x08
     ADMINISTER = 0x80
@@ -40,17 +40,24 @@ class User(UserMixin, db.Model):
     member_since = db.Column(db.DateTime(), default=datetime.utcnow)
     last_seen = db.Column(db.DateTime(), default=datetime.utcnow)
     status = db.Column(db.Boolean, default=True)
-    fname = db.Column(db.String(64))
-    sname = db.Column(db.String(64))
-    phone = db.Column(db.String(64))
+
     role_id = db.Column(db.Integer, db.ForeignKey('roles.id'))
+    role = db.relationship('Role', backref='user')
+
     cash_id = db.Column(db.Integer, db.ForeignKey('cashes.id'))
+    cash = db.relationship('Cashes', backref='user')
+
+    group_id = db.Column(db.Integer, db.ForeignKey('group_cashes.id'), default=1)
+    group = db.relationship('GroupOfCashes', backref='user')
 
     deals = db.relationship('Deals', backref='user', lazy='dynamic')
-    role = db.relationship('Role', backref='user')
-    cash = db.relationship('Cashes', backref='user')
-    transactions = db.relationship('Transaction', backref='user')
-    inkass = db.relationship('Inkass', backref='user')
+    transactions = db.relationship('Transaction', backref='user', lazy='dynamic')
+    collections = db.relationship('Collections', backref='user')
+
+    def __init__(self, **kwargs):
+        super(User, self).__init__(**kwargs)
+        if self.role == Role.query.filter_by(name='Collector').first():
+            self.group_id = GroupOfCashes.query.filter_by(group_branch='GR00').first().id
 
     def ping(self):
         self.last_seen = datetime.utcnow()
@@ -81,11 +88,7 @@ class User(UserMixin, db.Model):
             raise "No roles in db"
         if check_user is None:
             dadmin = User(username='dadmin',
-                          password='dadmin01',
-                          fname='Дмитрий',
-                          sname='Дмитриевич',
-                          phone='+380661453737'
-                          )
+                          password='dadmin01')
             dadmin.role = Role.query.filter_by(permissions=0xff).first()
             db.session.add(dadmin)
         db.session.commit()
@@ -94,6 +97,7 @@ class User(UserMixin, db.Model):
         return '<User %r>' % self.username
 
 
+# List of User;
 class Role(db.Model):
     __tablename__ = 'roles'
     id = db.Column(db.Integer, primary_key=True)
@@ -105,11 +109,14 @@ class Role(db.Model):
     @staticmethod
     def insert_roles():
         roles = {'User': (Permission.MAKE_OPERATION |
-                          Permission.MAKE_INKASS, True, 'Пользователь'),
+                          Permission.MAKE_COLLECTION, True, 'Пользователь'),
                  'Boss': (Permission.SHOW_STATUS |
                           Permission.MODERATE, False, 'Руководитель'),
+                 'Collector': (Permission.MAKE_OPERATION |
+                               Permission.MAKE_COLLECTION |
+                               Permission.SHOW_STATUS, False, 'Инкассатор'),
                  'Moderate': (Permission.MAKE_OPERATION |
-                              Permission.MAKE_INKASS |
+                              Permission.MAKE_COLLECTION |
                               Permission.SHOW_STATUS |
                               Permission.MODERATE, False, 'Модератор'),
                  'Administrator': (0xff, False, 'Администратор')
@@ -128,7 +135,7 @@ class Role(db.Model):
         return '<Role %r>' % self.name
 
 
-# Валюта;
+# List of Currency;
 class Currency(db.Model):
     __tablename__ = 'currency'
     id = db.Column(db.Integer, primary_key=True)
@@ -148,27 +155,48 @@ class Currency(db.Model):
         return '<Currency %r>' % self.name
 
 
-# Кассы;
+# List group of Cashes;
+class GroupOfCashes(db.Model):
+    __tablename__ = 'group_cashes'
+    id = db.Column(db.Integer, primary_key=True)
+    group_branch = db.Column(db.String(8), unique=True)
+    group_description = db.Column(db.String(64))
+    main = db.Column(db.Boolean, default=False)
+
+    @staticmethod
+    def insert_group():
+        if not GroupOfCashes.query.filter_by(group_branch='GR00').first():
+            first_group = GroupOfCashes(group_branch='GR00',
+                                        group_description='Main Group',
+                                        main=True)
+            db.session.add(first_group)
+
+    def __repr__(self):
+        return '<Group %s>' % self.id
+
+
+# List of Cashes;
 class Cashes(db.Model):
     __tablename__ = 'cashes'
     id = db.Column(db.Integer, primary_key=True)
-    branch = db.Column(db.String, unique=True)
-    city = db.Column(db.String(64))
+    branch = db.Column(db.String(8))
     address = db.Column(db.String(64))
-    phone = db.Column(db.String(64))
     member_since = db.Column(db.DateTime(), default=datetime.utcnow)
     status = db.Column(db.Boolean, default=True)
+    group_id = db.Column(db.Integer, db.ForeignKey('group_cashes.id'))
 
-    transactions = db.relationship('Transaction', backref='cash')
-    inkass = db.relationship('Inkass', backref='cash')
+    group = db.relationship('GroupOfCashes', backref='cash')
     deals = db.relationship('Deals', backref='cash', lazy='dynamic')
+    collections = db.relationship('Collections', backref='cash')
+    transactions = db.relationship('Transaction', backref='cash')
 
     @staticmethod
     def insert_cashes():
+        main_group = GroupOfCashes.query.filter_by(main=True).first()
         if not Cashes.query.filter_by(branch='CH00').first():
             cash = Cashes(branch='CH00',
-                          city='г.Киев',
-                          address='HeadOffice')
+                          address='HeadOffice',
+                          group=main_group)
             db.session.add(cash)
             deal = Deals(user_id=User.query.filter_by(username='dadmin').first().id,
                          cash_id=Cashes.query.first().id,
@@ -190,7 +218,7 @@ class Deals(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     cash_id = db.Column(db.Integer, db.ForeignKey('cashes.id'))
-    inkass = db.Column(db.Boolean, default=False) #inkass = 1 - YES;
+    inkass = db.Column(db.Boolean, default=False)  # inkass = 1 - YES;
     inkass_notes = db.Column(db.String(64))
     date_operation = db.Column(db.DateTime, default=datetime.utcnow)
     count_uah = db.Column(db.Float)
@@ -205,7 +233,7 @@ class Deals(db.Model):
         return '<Deals %s>' % (self.id)
 
 
-# Тип транзакции: Покупка(BUY), Продажа(SELL), другое;
+# Type Of Operation: SELL, BUY and other;
 class TypeOfOperation(db.Model):
     __tablename__ = 'type_of_operation'
     id = db.Column(db.Integer, primary_key=True)
@@ -235,7 +263,7 @@ class Transaction(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     cash_id = db.Column(db.Integer, db.ForeignKey('cashes.id'))
-    date_trans = db.Column(db.DateTime, default=datetime.utcnow())
+    date_trans = db.Column(db.DateTime, default=datetime.utcnow)
     oper_id = db.Column(db.Integer, db.ForeignKey('type_of_operation.id'))
     currency_id = db.Column(db.Integer, db.ForeignKey('currency.id'))
     course = db.Column(db.Float, nullable=False)
@@ -250,14 +278,14 @@ class Transaction(db.Model):
 
 
 # Список всех инкассаций;
-class Inkass(db.Model):
-    __tablename__ = "inkass"
+class Collections(db.Model):
+    __tablename__ = "collections"
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     cash_id = db.Column(db.Integer, db.ForeignKey('cashes.id'))
-    date_inkass = db.Column(db.DateTime, default=datetime.utcnow)
+    date_collection = db.Column(db.DateTime, default=datetime.utcnow)
     oper_id = db.Column(db.Integer, db.ForeignKey('type_of_operation.id'))
-    inkass_notes = db.Column(db.String(64))
+    collection_notes = db.Column(db.String(64))
     count_uah = db.Column(db.Float)
     count_usd = db.Column(db.Float)
     count_eur = db.Column(db.Float)
@@ -266,4 +294,16 @@ class Inkass(db.Model):
     oper = db.relationship('TypeOfOperation')
 
     def __repr__(self):
-        return '<Inkass %s>' % self.id
+        return '<Collections %s>' % self.id
+
+
+class WalletCollector(db.Model):
+    __tablename__ = "wallet_collector"
+
+    id = db.Column(db.Integer, primary_key=True)
+    collector_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    date_operation = db.Column(db.DateTime, default=datetime.utcnow)
+    oper_id = db.Column(db.Integer, db.ForeignKey('type_of_operation.id'))
+
+    def __repr__(self):
+        return '<WalletCollector %s>' % self.id

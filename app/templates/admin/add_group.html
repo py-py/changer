@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block title %} Changer-Добавление новой Группы Касс {% endblock title%}
+
+{% block content %}
+    <div class="col-sm-6 col-sm-offset-3 loginpage">
+        <p><h2 class="text-center">Управление Группами Касс</h2></p>
+        {% for message in get_flashed_messages() %}
+            <div id="alert_message" class="alert alert-warning">
+                <button type="button" class="close" data-dismiss="alert">&times;</button>
+                {{message}}
+            </div>
+        {% endfor %}
+        <form method="post">
+
+            <div class="input-group">
+                <span class="input-group-addon">Branch Группы:</span>
+                <input class="form-control" name="branch" placeholder="GRXX" type="text" required>
+            </div>
+
+            <div class="input-group" style="margin-top: 10px">
+                <span class="input-group-addon">Описание Группы:</span>
+                <input class="form-control" name="description" placeholder="Введите описание. Аля: Позняки" type="text" required>
+            </div>
+
+            <div class="row text-center" style="margin-top:10px">
+                <button type="submit" class="btn btn-success" disabled>Добавить Группу</button>
+                <button type="reset" class="btn btn-warning">Сбросить</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="col-sm-8 col-sm-offset-2">
+        <p><h2 class="text-center">Список существующих Групп</h2></p>
+        <div class="row">
+            <table class="table">
+                <thead>
+                <tr>
+                    <th class="text-center">Группы</th>
+                    <th class="text-center">Наименование</th>
+                    <th class="text-center">Входящие кассы</th>
+                    <th class="text-center">Инкассатор группы</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for g in list_group %}
+                    <tr>
+                        <td class="text-center">{{ g[0].group_branch }}</td>
+                        <td>{{ g[0].group_description }}</td>
+                        <td>
+                            {% for i in g[1] %}
+                                {% if not i.status %}
+                                    <span style="text-decoration: line-through; color: #ff0000;">{{ i.branch }} {{ i.address }}</span><span>(closed)</span>
+                                    <br>
+                                {% else %}
+                                    <span>{{ i.branch }} {{ i.address }}</span>
+                                {% endif %}
+                                <br>
+                            {% endfor %}
+                        </td>
+                        <td>
+                            {% if g[2] %}
+                                {% for i in g[2] %}
+                                    {{ i.username }}
+                                    <br>
+                                {% endfor %}
+                            {% else %}
+                                Отсутствует
+                            {% endif %}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}
+
+
+{% block scripts %}
+    {{ super() }}
+    <script src="{{ url_for('static', filename='moment-with-locales.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='moment_changer.js') }}"></script>
+    {{ moment.lang('ru') }}
+    <script>
+    var CheckGroup = (function () {
+        var pr = {},
+            pub = {};
+
+        pr.branchname = '';
+
+        pr.cbFunc = function(data) {
+            console.log(data);
+            data.can ? pub.activate_button(): pub.deactivate_button();
+        };
+
+        pr.checkBranchbyAjax = function (data) {
+            $.get({
+                url: '{{ url_for('admin.check_group') }}',
+                dataType: 'json',
+                data: data,
+                success: pr.cbFunc
+            })
+        };
+
+        pub.activate_button = function() {$('[type="submit"]').prop('disabled', false)};
+        pub.deactivate_button = function() {$('[type="submit"]').prop('disabled', true)};
+
+        pr.mainFunction = function () {
+            if ((pr.branchname.startsWith('GR') || pr.branchname.startsWith('gr')) && pr.branchname.length === 4) {
+                pr.checkBranchbyAjax({'branch': pr.branchname});
+            } else {
+                pub.deactivate_button();
+            };
+        };
+
+        pub.setHandlers = function () {
+            $('[name="branch"]').keyup(function() {
+                pr.branchname = $(this).val();
+                pr.mainFunction();
+            });
+        };
+        return pub;
+    })();
+
+    CheckGroup.setHandlers();
+    </script>
+
+{% endblock %}
