@@ -14,14 +14,13 @@ __author__ = 'py'
 @login_required
 @admin_required
 def add_user():
-    groups = GroupOfCashes.query.all()
+    groups = GroupOfCashes.query.order_by('group_branch').all()
 
     roles = Role.query.order_by('permissions').all()
     users = User.query.order_by('id').all()
     collector_permission = Role.query.filter_by(name='Collector').first().permissions
 
     if request.method == 'POST':
-        print(request.form)
         username = request.form['username']
         password = request.form['password']
         role_id = request.form['select_role']
@@ -93,10 +92,27 @@ def get_info_user():
 def edit_user():
     if request.method == 'POST':
         username = request.form['modal-username']
-        password = request.form['modal-password']
-        u = User.query.filter_by(username=username).first()
-        u.password = password
-        db.session.add(u)
+
+        password = request.form.get('modal-password')
+        role_id = request.form.get('modal-select_role')
+        group_id = request.form.get('modal-select_group')
+
+        # Update checked user;
+        user = User.query.filter_by(username=username).first()
+        role_collector = Role.query.filter_by(name='Collector').first()
+        role_current_user = Role.query.filter_by(id=role_id).first()
+
+        user.role = role_current_user
+        if role_current_user != role_collector:
+            user.group_id = 0
+
+        if password:
+            user.password = password
+
+        if group_id:
+            user.group = GroupOfCashes.query.filter_by(id=group_id).first()
+        db.session.add(user)
+
         return redirect(url_for('admin.add_user'))
 
 
