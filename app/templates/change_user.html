@@ -54,7 +54,7 @@
         };
 
         pr.checkCondition = function() {
-            if (pr.pass1 === pr.pass2) {
+            if ((pr.pass1 === pr.pass2) && pr.pass1.length > 0) {
                 pr.activate_button(pub.btn);
             } else {
                 pr.deactivate_buttion(pub.btn);
