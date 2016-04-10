@@ -2,7 +2,7 @@ from . import admin
 import json
 from app import db
 from app.decorators import admin_required
-from app.models import Role, User, Cashes, Deals, GroupOfCashes
+from app.models import Role, User, Cashes, Deals, GroupOfCashes, WalletCollector
 from flask import request, url_for, redirect, render_template, flash
 from flask.ext.login import login_required, current_user
 
@@ -35,8 +35,18 @@ def add_user():
                             password=password)
             user_new.group = GroupOfCashes.query.filter_by(id=group_id).first()
             user_new.role = Role.query.filter_by(id=role_id).first()
+
             db.session.add(user_new)
             flash('Пользователь с именем %s успешно добавлен в базу.' % username)
+
+            if isinstance(user_new.role, Role):
+                wallet_collector = WalletCollector(collector=user_new,
+                                                   count_uah=0,
+                                                   count_usd=0,
+                                                   count_eur=0,
+                                                   count_rub=0)
+                db.session.add(wallet_collector)
+                flash('Создан "Кошелёк инкассатора" %s.' %username)
         else:
             flash('Пользователь с именем %s уже есть в базе. Выбирете другое имя.' % username)
         return redirect(url_for('admin.add_user'))

@@ -1,5 +1,4 @@
 from datetime import datetime
-from flask import current_app
 from flask.ext.login import UserMixin, AnonymousUserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from . import db
@@ -301,9 +300,14 @@ class WalletCollector(db.Model):
     __tablename__ = "wallet_collector"
 
     id = db.Column(db.Integer, primary_key=True)
-    collector_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    collector_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     date_operation = db.Column(db.DateTime, default=datetime.utcnow)
-    oper_id = db.Column(db.Integer, db.ForeignKey('type_of_operation.id'))
 
+    count_uah = db.Column(db.Float)
+    count_usd = db.Column(db.Float)
+    count_eur = db.Column(db.Float)
+    count_rub = db.Column(db.Float)
+
+    collector = db.relationship('User')
     def __repr__(self):
         return '<WalletCollector %s>' % self.id

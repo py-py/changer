@@ -3,8 +3,9 @@ from datetime import datetime, timedelta
 from itertools import zip_longest
 from app import db, dec
 from app.decorators import user_required
-from app.models import Cashes, Role, User, Deals, TypeOfOperation, Currency, Transaction, Collections, Permission
-from flask import render_template, request, flash, url_for, redirect
+from app.models import Cashes, Role, User, Deals, TypeOfOperation, Currency, Transaction, Collections, Permission, \
+    WalletCollector
+from flask import render_template, request, flash, url_for, redirect, json
 from flask.ext.login import login_required, current_user
 from werkzeug.exceptions import BadRequestKeyError
 from . import main
@@ -120,13 +121,15 @@ def collections():
         except BadRequestKeyError:
             operation = None
         comment = str(request.form['comment'])
+
         UAH = dec(request.form['UAH'])
         EUR = dec(request.form['EUR'])
         USD = dec(request.form['USD'])
         RUB = dec(request.form['RUB'])
-        person = request.form['select_collector']
+        collector_id = str(request.form['select_collector'])
 
-        collector = User.query.filter_by(id=person).first()
+        current_collector = User.query.filter_by(id=collector_id).first()
+        current_wallet = WalletCollector.query.filter_by(collector=current_collector).order_by(WalletCollector.id.desc()).first()
 
         new_collection = Collections(user_id=current_user.id,
                                      cash_id=current_user.cash_id,
@@ -167,6 +170,18 @@ def collections():
             return redirect(url_for('main.collections'))
     return render_template('collections.html', cash_state=cash_state, collectors=collectors)
 
+@main.route('/collections_collector')
+@login_required
+@user_required
+def collections_collector():
+    collector_id = request.args['name_id']
+    current_collector = User.query.filter_by(id=collector_id).first()
+    current_wallet = WalletCollector.query.filter_by(collector=current_collector).order_by(WalletCollector.id.desc()).first()
+    return json.dumps({'collector': current_collector.username,
+                       'UAH': current_wallet.count_uah,
+                       'USD': current_wallet.count_usd,
+                       'EUR': current_wallet.count_eur,
+                       'RUB': current_wallet.count_rub})
 
 @main.route('/user_transaction', methods=['GET', 'POST'])
 @login_required

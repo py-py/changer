@@ -1,25 +1,22 @@
 __author__ = 'py'
 
 
-class A:
-    s = 'Some'
-    def __init__(self, a, b):
-        self.a = a
-        self.b = b
+def w(f):
+    def wrapper(*args):
+        print('Before')
+        print(f(*args))
+        print('After')
+    return wrapper
 
-    def __call__(self, *args, **kwargs):
-        return self.a + self.b
+@w
+def printer(name):
+    return name
 
-    def __bool__(self):
-        return True if self.a+self.b != 0 else False
+printer('YES')
 
-    @classmethod
-    def method(cls):
-        cls.s = 'New world!'
 
-a = A(10, -1)
+def p(name):
+    return name
 
-print(A.s)
-A.method()
-print(A.s)
-
+p = w(p)
+p('No')

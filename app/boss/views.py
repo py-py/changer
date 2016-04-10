@@ -1,7 +1,8 @@
 from datetime import datetime, timedelta
+from app import dec, db
 from app.decorators import permission_required
-from app.models import Permission, Cashes, Deals, Transaction, TypeOfOperation, Currency
-from flask import render_template, request
+from app.models import Permission, Cashes, Deals, Transaction, TypeOfOperation, Currency, User, Role, WalletCollector
+from flask import render_template, request, redirect, url_for
 from flask.ext.login import login_required
 from . import boss
 __author__ = 'py'
@@ -97,4 +98,49 @@ def boss_currency_state():
     transaction_today = Transaction.query. \
         filter(Transaction.date_trans > today).all()
     currency_state_cashes = get_dict(transaction_today)
-    return render_template('boss/boss_currency_state.html', d = currency_state_cashes)
+    return render_template('boss/boss_currency_state.html', d=currency_state_cashes)
+
+
+@boss.route('/boss_money_collector')
+@login_required
+@permission_required(Permission.SHOW_STATUS)
+def boss_money_collector():
+    role_collector = Role.query.filter_by(name='Collector').first()
+    collectors = User.query.filter_by(role=role_collector).filter_by(status=True).order_by('id').all()
+    list_wallet_collector =[]
+
+    for i in collectors:
+        wallet_i = WalletCollector.query.filter_by(collector=i).order_by(WalletCollector.id.desc()).first()
+        list_wallet_collector.append((i, wallet_i))
+
+    # if request.method == 'POST':
+    #     collector_id = request.form['collector_id']
+    #     oper = request.form['oper']
+    #     UAH = request.form['UAH']
+    #     USD = request.form['USD']
+    #     EUR = request.form['EUR']
+    #     RUB = request.form['RUB']
+    #     collector = User.query.filter_by(id=int(collector_id)).first()
+    #     operation = TypeOfOperation.query.filter_by(name=oper).first()
+    #     current_wallet = WalletCollector.query.filter_by(collector=collector).order_by(WalletCollector.id.desc()).first()
+    #     if oper == 'GET':
+    #         wallet_collector = WalletCollector(collector=collector,
+    #                                        oper=operation,
+    #                                        count_uah=dec(current_wallet.count_uah+UAH),
+    #                                        count_usd=dec(current_wallet.count_usd+USD),
+    #                                        count_eur=dec(current_wallet.count_eur+EUR),
+    #                                        count_rub=dec(current_wallet.count_rub+RUB))
+    #         db.session.add(wallet_collector)
+    #     elif oper == 'GIVE':
+    #         wallet_collector = WalletCollector(collector=collector,
+    #                                        oper=operation,
+    #                                        count_uah=dec(current_wallet.count_uah-UAH),
+    #                                        count_usd=dec(current_wallet.count_usd-USD),
+    #                                        count_eur=dec(current_wallet.count_eur-EUR),
+    #                                        count_rub=dec(current_wallet.count_rub-RUB))
+    #         db.session.add(wallet_collector)
+    #     return redirect(url_for('boss.boss_money_collector'))
+
+    return render_template('boss/boss_money_collector.html', list_wallet_collector=list_wallet_collector)
+
+

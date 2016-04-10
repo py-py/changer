@@ -183,7 +183,17 @@
                 RUB: 0
             };
 
+            pr.avaliable = {
+                UAH: 0,
+                USD: 0,
+                EUR: 0,
+                RUB: 0
+            };
+
+            pr.url = '{{ url_for('main.collections_collector') }}';
+
             pr.direction = '';
+            pr.selectCollector = '';
 
             //
             pr.updateBalances = function() {
@@ -200,8 +210,22 @@
                 pr.numbers.RUB = parseFloat($("[name='RUB']").val()) || 0;
             };
 
-            pr.updateDirection = function(direction) {
-                pr.direction = direction;
+            pr.updateAvaliable = function () {
+                if (pr.selectCollector) {
+                    $.get({
+                        url: pr.url,
+                        dataType: 'json',
+                        data: {'name_id': pr.selectCollector},
+                        success: function(data) {
+                            pr.avaliable.UAH = data.UAH;
+                            pr.avaliable.EUR = data.EUR;
+                            pr.avaliable.USD = data.USD;
+                            pr.avaliable.RUB = data.RUB;
+                            //temp
+                            console.log(data);
+                        }
+                    });
+                };
             };
 
             //
@@ -220,16 +244,48 @@
                 return isCorrect;
             };
 
-            //
+            pr.checkAvaliable = function () {
+                pr.updateNumbers();
+
+                var isCorrect = true;
+
+                for (var i in pr.avaliable) {
+                    if (pr.avaliable[i]-pr.numbers[i] < 0) {
+                        isCorrect=false;
+                    };
+                };
+                return isCorrect;
+            };
+
+            pr.checkInputedValuesonZero = function () {
+                var isCorrect = false;
+                for (var i in pr.numbers) {
+                    if(pr.numbers[i] !== 0) {
+                        isCorrect = true;
+                    }
+                };
+                return isCorrect;
+            };
+            
+            pr.defaultCollector = function () {
+                pr.selectCollector = $('[name="select_collector"]').val();
+                pr.updateAvaliable();
+            };
+
+            //Main Condition
             pr.isIfConditionsCorrect = function() {
                 if (pr.direction === 'GIVE') {
-                    if (pr.direction && pr.checkBalance()) {
+                    if (pr.checkBalance() && pr.checkInputedValuesonZero()) {
                         pub.active_button();
                     } else {
                         pub.deactive_button();
                     }
                 } else if (pr.direction === 'GET') {
-                    pub.active_button();
+                    if (pr.checkAvaliable() && pr.checkInputedValuesonZero()) {
+                        pub.active_button();
+                    } else {
+                        pub.deactive_button();
+                    }
                 } else {
                     pub.deactive_button();
                 }
@@ -242,16 +298,22 @@
             pub.setHandlers = function() {
 
                 $('#oper').click(function(evData){
-                    var oper = evData.target.attributes['data-op'].value;
-                    pr.updateDirection(oper);
+                    pr.direction = evData.target.attributes['data-op'].value;
                     pr.isIfConditionsCorrect();
-                })
+                });
 
                 $('.input-group input').keyup(function() {
-                    pr.updateBalances();
                     pr.isIfConditionsCorrect();
-                })
+                });
 
+                $('[name="select_collector"]').click(function() {
+                    pr.selectCollector = $(this).val();
+                    pr.updateAvaliable();
+                    pr.isIfConditionsCorrect();
+                });
+
+                //TEST
+                pr.defaultCollector();
 
                 $('button[data-target=".bs-example-modal-sm"]').click(function(){
                     pr.updateNumbers();
@@ -260,7 +322,6 @@
                     $('#modal-eur').text(pr.numbers.EUR);
                     $('#modal-rub').text(pr.numbers.RUB);
                 });
-
             };
 
             return pub;

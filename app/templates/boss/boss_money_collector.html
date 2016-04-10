@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %} Changer-Кошелёк инкассатора {% endblock title%}
+
+{% block content %}
+    <div class="container loginpage">
+        <div class="col-sm-8 col-sm-offset-2">
+            <h1 class="text-center">Кошелёк инкассатора</h1>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Id</th>
+                        <th>Username</th>
+                        <th>USD</th>
+                        <th>EUR</th>
+                        <th>RUB</th>
+                        <th>UAH</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for i in list_wallet_collector %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td>{{ i[0].username }}:{{ i[1].collector }}</td>
+                        <td>{{ i[1].count_usd }}</td>
+                        <td>{{ i[1].count_eur }}</td>
+                        <td>{{ i[1].count_rub }}</td>
+                        <td>{{ i[1].count_uah }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+    {{ super() }}
+{% endblock %}
