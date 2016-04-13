@@ -80,22 +80,22 @@
 
                     <div class="input-group mt">
                         <span class="input-group-addon">Гривна:</span>
-                        <input class="form-control" name="UAH" placeholder="Сумма в гривнах." type="number" step="0.01"  value="0" autocomplete="off" required>
+                        <input class="form-control" name="UAH" placeholder="Сумма в гривнах." type="number" step="0.01"  min="0"  value="0" autocomplete="off" required>
                     </div>
 
                     <div class="input-group mt">
                         <span class="input-group-addon">Доллар:</span>
-                        <input class="form-control" name="USD" placeholder="Сумма в долларах." type="number" step="0.01"  value="0" autocomplete="off" required>
+                        <input class="form-control" name="USD" placeholder="Сумма в долларах." type="number" step="0.01"  min="0"  value="0" autocomplete="off" required>
                     </div>
 
                     <div class="input-group mt">
                         <span class="input-group-addon">Евро:</span>
-                        <input class="form-control" name="EUR" placeholder="Сумма в евро." type="number" step="0.01"  value="0" autocomplete="off" required>
+                        <input class="form-control" name="EUR" placeholder="Сумма в евро." type="number" step="0.01"  min="0"  value="0" autocomplete="off" required>
                     </div>
 
                     <div class="input-group mt">
                         <span class="input-group-addon">Рубли:</span>
-                        <input class="form-control" name="RUB" placeholder="Сумма в рублях." type="number" step="0.01"  value="0" autocomplete="off" required>
+                        <input class="form-control" name="RUB" placeholder="Сумма в рублях." type="number" step="0.01"  min="0"  value="0" autocomplete="off" required>
                     </div>
 
                     <div class="form-group mt">
@@ -106,6 +106,30 @@
                     <div class="row text-center">
                         <button type="button" class="btn btn-success" data-toggle="modal" data-target=".bs-example-modal-sm" disabled>Провести инкассацию</button>
                         <button type="reset" class="btn btn-warning">Сбросить</button>
+                    </div>
+
+
+
+                    <div class="hide_table">
+                        <h2 class="text-center">Кошелёк инкассатора</h2>
+                        <table class="table" id="state_collector">
+                            <thead>
+                            <tr>
+                                <th class="text-center">UAH</th>
+                                <th class="text-center">USD</th>
+                                <th class="text-center">EUR</th>
+                                <th class="text-center">RUB</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr>
+                                <td id="balance_collector_UAH" class="text-center">0.0</td>
+                                <td id="balance_collector_USD" class="text-center">0.0</td>
+                                <td id="balance_collector_EUR" class="text-center">0.0</td>
+                                <td id="balance_collector_RUB" class="text-center">0.0</td>
+                            </tr>
+                            </tbody>
+                        </table>
                     </div>
 
                     <!--Модальное окно-->
@@ -190,6 +214,9 @@
                 RUB: 0
             };
 
+
+
+
             pr.url = '{{ url_for('main.collections_collector') }}';
 
             pr.direction = '';
@@ -217,15 +244,21 @@
                         dataType: 'json',
                         data: {'name_id': pr.selectCollector},
                         success: function(data) {
-                            pr.avaliable.UAH = data.UAH;
-                            pr.avaliable.EUR = data.EUR;
-                            pr.avaliable.USD = data.USD;
-                            pr.avaliable.RUB = data.RUB;
-                            //temp
-                            console.log(data);
+                            pr.avaliable.UAH = parseFloat(data.UAH) || 0;
+                            pr.avaliable.EUR = parseFloat(data.EUR) || 0;
+                            pr.avaliable.USD = parseFloat(data.USD) || 0;
+                            pr.avaliable.RUB = parseFloat(data.RUB) || 0;
+                            pr.updateWalletCollector();
                         }
                     });
                 };
+            };
+
+            pr.updateWalletCollector = function() {
+                $('#balance_collector_UAH').text(pr.avaliable.UAH);
+                $('#balance_collector_USD').text(pr.avaliable.USD);
+                $('#balance_collector_EUR').text(pr.avaliable.EUR);
+                $('#balance_collector_RUB').text(pr.avaliable.RUB);
             };
 
             //
@@ -266,7 +299,7 @@
                 };
                 return isCorrect;
             };
-            
+
             pr.defaultCollector = function () {
                 pr.selectCollector = $('[name="select_collector"]').val();
                 pr.updateAvaliable();
@@ -312,7 +345,6 @@
                     pr.isIfConditionsCorrect();
                 });
 
-                //TEST
                 pr.defaultCollector();
 
                 $('button[data-target=".bs-example-modal-sm"]').click(function(){

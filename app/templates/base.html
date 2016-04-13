@@ -63,7 +63,8 @@
                                         <li class="dropdown">
                                         <a href="#" class="dropdown-toggle" data-toggle="dropdown">Руководство<b class="caret"></b></a>
                                         <ul class="dropdown-menu">
-                                            <li><a href="{{ url_for('boss.boss_state') }}">Остатки по кассам</a></li>
+                                            <li><a href="{{ url_for('boss.boss_money_collector') }}">Остатки инкассаторов</a></li>
+                                            <li><a href="{{ url_for('boss.boss_state') }}">Остатки касс</a></li>
                                             <li><a href="{{ url_for('boss.boss_trans') }}">Транзакции по кассам</a></li>
                                             <li><a href="{{ url_for('boss.boss_currency_state') }}">Срез на сегодня</a></li>
                                         </ul>
@@ -76,7 +77,7 @@
                                     <li class="dropdown">
                                         <a href="#" class="dropdown-toggle" data-toggle="dropdown">Аккаунт<b class="caret"></b></a>
                                         <ul class="dropdown-menu">
-                                            {% if current_user.can(Permission.MODERATE) %}
+                                            {% if current_user.can(Permission.ADMINISTER) %}
                                                 <li><a href="{{ url_for('admin.add_cash') }}">Управление кассами</a></li>
                                                 <li><a href="{{ url_for('admin.add_group') }}">Управление группами касс</a></li>
                                                 <li><a href="{{ url_for('admin.add_user') }}">Управление пользователями</a></li>

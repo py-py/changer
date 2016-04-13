@@ -117,9 +117,9 @@ def collections():
 
     if request.method == 'POST':
         try:
-            operation = str(request.form['oper'])
+            oper = str(request.form['oper'])
         except BadRequestKeyError:
-            operation = None
+            oper = None
         comment = str(request.form['comment'])
 
         UAH = dec(request.form['UAH'])
@@ -129,11 +129,12 @@ def collections():
         collector_id = str(request.form['select_collector'])
 
         current_collector = User.query.filter_by(id=collector_id).first()
-        current_wallet = WalletCollector.query.filter_by(collector=current_collector).order_by(WalletCollector.id.desc()).first()
+        current_wallet = WalletCollector.query.filter_by(collector=current_collector).order_by(
+            WalletCollector.id.desc()).first()
 
         new_collection = Collections(user_id=current_user.id,
                                      cash_id=current_user.cash_id,
-                                     oper=TypeOfOperation.query.filter_by(name=operation).first(),
+                                     oper=TypeOfOperation.query.filter_by(name=oper).first(),
                                      collection_notes=comment,
                                      count_uah=UAH,
                                      count_eur=EUR,
@@ -141,28 +142,44 @@ def collections():
                                      count_rub=RUB)
         db.session.add(new_collection)
 
-        if operation == 'GET':
+        if oper == 'GET':
             new_deal = Deals(user_id=current_user.id,
                              cash_id=current_user.cash_id,
                              inkass=True,
                              inkass_notes=comment,
+                             collector_id=current_collector.id,
                              count_uah=dec(cash_state.count_uah + UAH),
                              count_eur=dec(cash_state.count_eur + EUR),
                              count_usd=dec(cash_state.count_usd + USD),
                              count_rub=dec(cash_state.count_rub + RUB))
             db.session.add(new_deal)
+            wallet_collector = WalletCollector(collector=current_collector,
+                                               oper=TypeOfOperation.query.filter_by(name='GIVE').first(),
+                                               count_uah=dec(current_wallet.count_uah - UAH),
+                                               count_usd=dec(current_wallet.count_usd - USD),
+                                               count_eur=dec(current_wallet.count_eur - EUR),
+                                               count_rub=dec(current_wallet.count_rub - RUB))
+            db.session.add(wallet_collector)
             flash('Проведена инкассация. Обновлены остатки по кассе.', 'success')
             return redirect(url_for('main.collections'))
-        elif operation == 'GIVE':
+        elif oper == 'GIVE':
             new_deal = Deals(user_id=current_user.id,
                              cash_id=current_user.cash_id,
                              inkass=True,
                              inkass_notes=comment,
+                             collector_id=current_collector.id,
                              count_uah=dec(cash_state.count_uah - UAH),
                              count_eur=dec(cash_state.count_eur - EUR),
                              count_usd=dec(cash_state.count_usd - USD),
                              count_rub=dec(cash_state.count_rub - RUB))
             db.session.add(new_deal)
+            wallet_collector = WalletCollector(collector=current_collector,
+                                               oper=TypeOfOperation.query.filter_by(name='GET').first(),
+                                               count_uah=dec(current_wallet.count_uah + UAH),
+                                               count_usd=dec(current_wallet.count_usd + USD),
+                                               count_eur=dec(current_wallet.count_eur + EUR),
+                                               count_rub=dec(current_wallet.count_rub + RUB))
+            db.session.add(wallet_collector)
             flash('Проведена инкассация. Обновлены остатки по кассе.', 'success')
             return redirect(url_for('main.collections'))
         else:
@@ -170,18 +187,22 @@ def collections():
             return redirect(url_for('main.collections'))
     return render_template('collections.html', cash_state=cash_state, collectors=collectors)
 
+
 @main.route('/collections_collector')
 @login_required
-@user_required
+# temp
+# @user_required
 def collections_collector():
     collector_id = request.args['name_id']
     current_collector = User.query.filter_by(id=collector_id).first()
-    current_wallet = WalletCollector.query.filter_by(collector=current_collector).order_by(WalletCollector.id.desc()).first()
+    current_wallet = WalletCollector.query.filter_by(collector=current_collector).order_by(
+        WalletCollector.id.desc()).first()
     return json.dumps({'collector': current_collector.username,
                        'UAH': current_wallet.count_uah,
                        'USD': current_wallet.count_usd,
                        'EUR': current_wallet.count_eur,
                        'RUB': current_wallet.count_rub})
+
 
 @main.route('/user_transaction', methods=['GET', 'POST'])
 @login_required
@@ -362,9 +383,3 @@ def report():
                            d_state=currency_state_cash,
                            start_cash_state=start_cash_state,
                            finish_cash_state=finish_cash_state)
-
-
-
-
-
-

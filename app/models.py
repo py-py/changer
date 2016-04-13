@@ -219,6 +219,7 @@ class Deals(db.Model):
     cash_id = db.Column(db.Integer, db.ForeignKey('cashes.id'))
     inkass = db.Column(db.Boolean, default=False)  # inkass = 1 - YES;
     inkass_notes = db.Column(db.String(64))
+    collector_id = db.Column(db.Integer, default=0)
     date_operation = db.Column(db.DateTime, default=datetime.utcnow)
     count_uah = db.Column(db.Float)
     currency_usd = db.Column(db.Float, default=0)
@@ -302,11 +303,14 @@ class WalletCollector(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     collector_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     date_operation = db.Column(db.DateTime, default=datetime.utcnow)
+    oper_id = db.Column(db.Integer, db.ForeignKey('type_of_operation.id'))
 
     count_uah = db.Column(db.Float)
     count_usd = db.Column(db.Float)
     count_eur = db.Column(db.Float)
     count_rub = db.Column(db.Float)
+
+    oper = db.relationship('TypeOfOperation')
 
     collector = db.relationship('User')
     def __repr__(self):
