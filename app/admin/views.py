@@ -1,6 +1,7 @@
 from . import admin
 import json
 from app import db
+from app.additional_class import CashPlus
 from app.decorators import admin_required
 from app.models import Role, User, Cashes, Deals, GroupOfCashes, WalletCollector
 from flask import request, url_for, redirect, render_template, flash
@@ -18,7 +19,7 @@ def add_user():
 
     roles = Role.query.order_by('permissions').all()
     users = User.query.order_by('id').all()
-    collector_permission = Role.query.filter_by(name='Collector').first().permissions
+    collector_role = Role.query.filter_by(name='Collector').first()
 
     if request.method == 'POST':
         username = request.form['username']
@@ -29,31 +30,27 @@ def add_user():
         if not group_id:
             group_id = GroupOfCashes.query.filter_by(group_branch='GR00').first().id
 
-        user_new = User.query.filter_by(username=username).first()
-        if user_new is None:
-            user_new = User(username=username,
-                            password=password)
-            user_new.group = GroupOfCashes.query.filter_by(id=group_id).first()
-            user_new.role = Role.query.filter_by(id=role_id).first()
+        person_new = User.query.filter_by(username=username).first()
 
-            db.session.add(user_new)
+        if person_new is None:
+            person_new = User(username=username,
+                              password=password)
+            person_new.group = GroupOfCashes.query.filter_by(id=group_id).first()
+            person_new.role = Role.query.filter_by(id=role_id).first()
+
+            db.session.add(person_new)
             flash('Пользователь с именем %s успешно добавлен в базу.' % username)
 
-            if isinstance(user_new.role, Role):
-                wallet_collector = WalletCollector(collector=user_new,
-                                                   count_uah=0,
-                                                   count_usd=0,
-                                                   count_eur=0,
-                                                   count_rub=0)
-                db.session.add(wallet_collector)
-                flash('Создан "Кошелёк инкассатора" %s.' %username)
+            if person_new.role == collector_role:
+                person_new.create_wallet()
+                flash('Создан "Кошелёк инкассатора" %s.' % username)
         else:
             flash('Пользователь с именем %s уже есть в базе. Выбирете другое имя.' % username)
         return redirect(url_for('admin.add_user'))
     return render_template('admin/add_user.html',
                            users=users,
                            roles=roles,
-                           permission=collector_permission,
+                           permission=collector_role.permissions,
                            groups=groups)
 
 
@@ -135,21 +132,14 @@ def add_cash():
     groups = GroupOfCashes.query.order_by('group_branch').all()
 
     if request.method == 'POST':
-        branch = request.form['branch'].upper()
-        address = request.form['address']
-        group = request.form['select_group']
+        branch = request.form.get('branch').upper()
+        address = request.form.get('address')
+        group = request.form.get('select_group')
         group = GroupOfCashes.query.filter_by(id=group).first()
 
         cash = Cashes(branch=branch, address=address, group=group)
         db.session.add(cash)
-
-        deal = Deals(user_id=current_user.id,
-                     cash=Cashes.query.filter_by(branch=branch).first(),
-                     count_uah=0,
-                     count_eur=0,
-                     count_usd=0,
-                     count_rub=0)
-        db.session.add(deal)
+        CashPlus().create_cash(current_user._get_current_object(), branch)
 
         flash("Добавлена новая касса %s по адресу: %s" % (branch, address))
         return redirect(url_for('admin.add_cash'))
@@ -213,7 +203,8 @@ def edit_cash():
         db.session.add(branch)
         return redirect(url_for('admin.add_cash'))
 
-# About Groupes:
+
+# About Groups:
 @admin.route('/add_group', methods=['GET', 'POST'])
 @login_required
 @admin_required
@@ -242,7 +233,6 @@ def add_group():
 @admin_required
 def check_group():
     group_name = request.args['branch'].upper()
-    print(GroupOfCashes.query.filter_by(group_branch=group_name).first())
     if GroupOfCashes.query.filter_by(group_branch=group_name).first():
         return json.dumps({'can': False})
     else:
